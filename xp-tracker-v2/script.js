@@ -63,8 +63,13 @@ function safeJson(value,fallback){
 }
 
 function load(){
-  state.selected = safeJson(localStorage.getItem(STORE.selected), state.selected);
-  state.settings = {...DEFAULT_SETTINGS, ...safeJson(localStorage.getItem(STORE.settings), {})};
+  const savedSelected = safeJson(localStorage.getItem(STORE.selected), null);
+  state.selected = Array.isArray(savedSelected)
+    ? savedSelected.filter(key => JOBS.some(job => job.key === key))
+    : [...state.selected];
+
+  const savedSettings = safeJson(localStorage.getItem(STORE.settings), {});
+  state.settings = {...DEFAULT_SETTINGS, ...(savedSettings && typeof savedSettings === "object" ? savedSettings : {})};
   const savedSession = safeJson(localStorage.getItem(STORE.session), null);
   if (savedSession && savedSession.baseline && savedSession.sessionStartedAt) {
     state.baseline = savedSession.baseline;
