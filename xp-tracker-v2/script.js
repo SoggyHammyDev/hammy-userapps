@@ -1,978 +1,431 @@
-let lastInventoryObj = {};
-let selectedJobs = [];
-let expLogs = {};
-let lastBXPs = {};
-let initialExps = {};
-let lastExps = {};
-let hasFirstGain = {};
-let lastUpdateTime = {};
-let lastDisplayedExps = {};
-let lastRenderTime = 0;
-let hasReceivedAnyData = false;
-let hasRequestedOnce = false;
-
-const TRACKER_SIZE_KEY = "tracker-app-size";
-const TRACKER_POSITION_KEY = "tracker-app-position";
-const XP_FONT_SIZE_KEY = "xp-font-size";
-const RECENT_WINDOW_MS = 10 * 60 * 1000;
-const RENDER_THROTTLE_MS = 500;
+"use strict";
 
 const JOBS = [
-  { key: "trucker", label: "Trucker" },
-  { key: "mechanic", label: "Mechanic" },
-  { key: "garbage", label: "Garbage" },
-  { key: "postop", label: "PostOP" },
-  { key: "pilot", label: "Airline Pilot" },
-  { key: "helicopterpilot", label: "Helicopter Pilot" },
-  { key: "cargopilot", label: "Cargo Pilot" },
-  { key: "busdriver", label: "Bus Driver" },
-  { key: "conductor", label: "Train Conductor" },
-  { key: "emergency", label: "EMS" },
-  { key: "player", label: "Player" },
-  { key: "firefighter", label: "Firefighter" },
-  { key: "racer", label: "Racer" },
-  { key: "farmer", label: "Farmer" },
-  { key: "fisher", label: "Fisher" },
-  { key: "strength", label: "Strength" },
-  { key: "miner", label: "Miner" },
-  { key: "business", label: "Business" },
-  { key: "hunter", label: "Hunter" }
+  { key:"trucker", label:"Trucker", exp:"exp_trucking_trucking", bxp:"exp_token_a|trucking|trucking", jobs:["trucker"] },
+  { key:"mechanic", label:"Mechanic", exp:"exp_trucking_mechanic", bxp:"exp_token_a|trucking|mechanic", jobs:["mechanic"] },
+  { key:"garbage", label:"Garbage", exp:"exp_trucking_garbage", bxp:"exp_token_a|trucking|garbage", jobs:["garbage"] },
+  { key:"postop", label:"PostOP", exp:"exp_trucking_postop", bxp:"exp_token_a|trucking|postop", jobs:["postop"] },
+  { key:"pilot", label:"Airline Pilot", exp:"exp_piloting_piloting", bxp:"exp_token_a|piloting|piloting", jobs:["pilot"] },
+  { key:"helicopterpilot", label:"Helicopter Pilot", exp:"exp_piloting_heli", bxp:"exp_token_a|piloting|heli", jobs:["helicopterpilot"] },
+  { key:"cargopilot", label:"Cargo Pilot", exp:"exp_piloting_cargos", bxp:"exp_token_a|piloting|cargos", jobs:["cargopilot"] },
+  { key:"busdriver", label:"Bus Driver", exp:"exp_train_bus", bxp:"exp_token_a|train|bus", jobs:["busdriver"] },
+  { key:"conductor", label:"Train Conductor", exp:"exp_train_train", bxp:"exp_token_a|train|train", jobs:["conductor"] },
+  { key:"emergency", label:"EMS", exp:"exp_ems_ems", bxp:"exp_token_a|ems|ems", jobs:["emergency","ems"] },
+  { key:"firefighter", label:"Firefighter", exp:"exp_ems_fire", bxp:"exp_token_a|ems|fire", jobs:["firefighter"] },
+  { key:"player", label:"Player", exp:"exp_player_player", bxp:"exp_token_a|player|player", jobs:["player","unemployed"] },
+  { key:"racer", label:"Racing", exp:"exp_player_racing", bxp:"exp_token_a|player|racing", jobs:["racer","racing"] },
+  { key:"farmer", label:"Farming", exp:"exp_farming_farming", bxp:"exp_token_a|farming|farming", jobs:["farmer"] },
+  { key:"fisher", label:"Fishing", exp:"exp_farming_fishing", bxp:"exp_token_a|farming|fishing", jobs:["fisher"] },
+  { key:"miner", label:"Mining", exp:"exp_farming_mining", bxp:"exp_token_a|farming|mining", jobs:["miner","quarry"] },
+  { key:"strength", label:"Strength", exp:"exp_physical_strength", bxp:"exp_token_a|physical|strength", jobs:[] },
+  { key:"business", label:"Business", exp:"exp_business_business", bxp:"exp_token_a|business|business", jobs:[] },
+  { key:"hunter", label:"Hunting", exp:"exp_hunting_skill", bxp:"exp_token_a|hunting|skill", jobs:["hunter"] }
 ];
 
-const JOB_EXP_KEYS = {
-  trucker: "exp_trucking_trucking",
-  mechanic: "exp_trucking_mechanic",
-  garbage: "exp_trucking_garbage",
-  postop: "exp_trucking_postop",
-  pilot: "exp_piloting_piloting",
-  helicopterpilot: "exp_piloting_heli",
-  cargopilot: "exp_piloting_cargos",
-  busdriver: "exp_train_bus",
-  conductor: "exp_train_train",
-  emergency: "exp_ems_ems",
-  firefighter: "exp_ems_fire",
-  racer: "exp_player_racing",
-  farmer: "exp_farming_farming",
-  fisher: "exp_farming_fishing",
-  miner: "exp_farming_mining",
-  business: "exp_business_business",
-  hunter: "exp_hunting_skill",
-  player: "exp_player_player",
-  strength: "exp_physical_strength"
+const KEYS = [...new Set([
+  ...JOBS.map(j => j.exp),
+  "inventory","job","job_name","job_title","subjob","subjob_name"
+])];
+
+const STORE = {
+  selected:"xp-v2-selected",
+  settings:"xp-v2-settings",
+  position:"xp-v2-position",
+  size:"xp-v2-size",
+  session:"xp-v2-session"
 };
 
-const JOB_BXP_KEYS = {
-  trucker:       "exp_token_a|trucking|trucking",
-  mechanic:      "exp_token_a|trucking|mechanic",
-  garbage:       "exp_token_a|trucking|garbage",
-  postop:        "exp_token_a|trucking|postop",
-  pilot:         "exp_token_a|piloting|piloting",
-  helicopterpilot:"exp_token_a|piloting|heli",
-  cargopilot:    "exp_token_a|piloting|cargos",
-  busdriver:     "exp_token_a|train|bus",
-  conductor:     "exp_token_a|train|train",
-  emergency:     "exp_token_a|ems|ems",
-  firefighter:   "exp_token_a|ems|fire",
-  racer:         "exp_token_a|player|racing",
-  farmer:        "exp_token_a|farming|farming",
-  fisher:        "exp_token_a|farming|fishing",
-  miner:         "exp_token_a|farming|mining",
-  business:      "exp_token_a|business|business",
-  hunter:        "exp_token_a|hunting|skill",
-  player:        "exp_token_a|player|player",
-  strength:      "exp_token_a|physical|strength"
+const DEFAULT_SETTINGS = {
+  level:true,bxp:true,gain:true,rate:true,eta:true,progress:true,highlightActive:true,fontSize:11
 };
 
-function formatNumber(num) {
-  if (num >= 1000000) return (num / 1000000).toFixed(2) + "M";
-  if (num >= 1000) return (num / 1000).toFixed(1) + "K";
-  return num.toLocaleString();
+const state = {
+  selected:["player","trucker","mechanic","miner","fisher"],
+  settings:{...DEFAULT_SETTINGS},
+  xp:{},
+  bxp:{},
+  baseline:{},
+  logs:{},
+  lastGainAt:{},
+  job:"",
+  jobName:"",
+  jobTitle:"",
+  sessionStartedAt:Date.now(),
+  received:false,
+  minimized:false
+};
+
+const $ = id => document.getElementById(id);
+const jobByKey = key => JOBS.find(j => j.key === key);
+
+function safeJson(value,fallback){
+  try { return JSON.parse(value); } catch { return fallback; }
 }
 
-function getAllRequiredKeys() {
-  const expKeys = Object.values(JOB_EXP_KEYS);
-  
-  const bxpKeys = Object.values(JOB_BXP_KEYS);
-  
-  const inventoryKey = ["inventory"];
-  
-  return [...expKeys, ...bxpKeys, ...inventoryKey];
-}
-
-function getLevelInfo(exp) {
-  let level = 0;
-  let xpCap = 5;
-  while (exp >= xpCap) {
-    exp -= xpCap;
-    level++;
-    xpCap = (level + 1) * 5;
+function load(){
+  state.selected = safeJson(localStorage.getItem(STORE.selected), state.selected);
+  state.settings = {...DEFAULT_SETTINGS, ...safeJson(localStorage.getItem(STORE.settings), {})};
+  const savedSession = safeJson(localStorage.getItem(STORE.session), null);
+  if (savedSession && savedSession.baseline && savedSession.sessionStartedAt) {
+    state.baseline = savedSession.baseline;
+    state.logs = savedSession.logs || {};
+    state.lastGainAt = savedSession.lastGainAt || {};
+    state.sessionStartedAt = savedSession.sessionStartedAt;
   }
-  return { level, expInLevel: exp, expForNext: xpCap };
-}
 
-function getSortedJobs() {
-  return [...JOBS].sort((a, b) => a.label.localeCompare(b.label));
-}
-
-function getPercentValue(exp, cap) {
-  if (typeof exp !== "number") return null;
-  const pct = Math.max(0, Math.min(100, (exp / cap) * 100));
-  return +pct.toFixed(1);
-}
-
-function get1MPercentValue(jobKey) {
-  const exp = lastExps[jobKey];
-  return getPercentValue(exp, 1_000_000);
-}
-
-function get10MPercentValue(jobKey) {
-  const exp = lastExps[jobKey];
-  return getPercentValue(exp, 10_000_000);
-}
-
-function saveData() {
-  localStorage.setItem("selected-jobs", JSON.stringify(selectedJobs));
-  localStorage.setItem("exp-logs", JSON.stringify(expLogs));
-}
-
-function loadData() {
-  selectedJobs = JSON.parse(localStorage.getItem("selected-jobs") || "[]");
-  
-  if (selectedJobs.length === 0) {
-    selectedJobs = ["player", "trucker", "mechanic"];
-    localStorage.setItem("selected-jobs", JSON.stringify(selectedJobs));
+  const pos = safeJson(localStorage.getItem(STORE.position), null);
+  if (pos) {
+    $("tracker-app").style.left = Math.max(0, Number(pos.left)||0) + "px";
+    $("tracker-app").style.top = Math.max(0, Number(pos.top)||0) + "px";
   }
-  
-  expLogs = JSON.parse(localStorage.getItem("exp-logs") || "{}");
-  loadSettings();
-  loadFontSize();
-  renderSummary();
-}
-
-function resetAllData() {
-  Object.keys(expLogs).forEach(key => delete expLogs[key]);
-  Object.keys(initialExps).forEach(key => delete initialExps[key]);
-  Object.keys(hasFirstGain).forEach(key => delete hasFirstGain[key]);
-  Object.keys(lastUpdateTime).forEach(key => delete lastUpdateTime[key]);
-  
-  selectedJobs.forEach(jobKey => {
-    const exp = lastExps[jobKey];
-    if (typeof exp === "number") {
-      expLogs[jobKey] = [];
-      initialExps[jobKey] = exp;
-      hasFirstGain[jobKey] = false;
-    }
-  });
-  
-  saveData();
-  renderStats();
-}
-
-function saveSettings() {
-  try {
-    const settings = {
-      bxp: document.getElementById("toggle-bxp").checked,
-      currentLevel: document.getElementById("toggle-current-level").checked,
-      expHr: document.getElementById("toggle-exp-hr").checked,
-      expMin: document.getElementById("toggle-exp-min").checked,
-      perkChance: document.getElementById("toggle-perk-chance").checked,
-      oneMPercent: document.getElementById("toggle-1m-percent").checked,
-      tenMPercent: document.getElementById("toggle-10m-percent").checked,
-      level: document.getElementById("toggle-level").checked
-    };
-    localStorage.setItem("tracker-settings", JSON.stringify(settings));
-  } catch (error) {
+  const size = safeJson(localStorage.getItem(STORE.size), null);
+  if (size) {
+    $("tracker-app").style.width = Math.max(430, Number(size.width)||720) + "px";
+    $("tracker-app").style.height = Math.max(150, Number(size.height)||310) + "px";
   }
+  applySettingsToInputs();
 }
 
-function loadSettings() {
-  try {
-    const savedSettings = localStorage.getItem("tracker-settings");
-    const settings = savedSettings ? JSON.parse(savedSettings) : {};
-    
-    document.getElementById("toggle-bxp").checked = settings.bxp !== false;
-    document.getElementById("toggle-current-level").checked = settings.currentLevel !== false;
-    document.getElementById("toggle-exp-hr").checked = settings.expHr !== false;
-    document.getElementById("toggle-exp-min").checked = settings.expMin !== false;
-    document.getElementById("toggle-perk-chance").checked = settings.perkChance !== false;
-    document.getElementById("toggle-1m-percent").checked = settings.oneMPercent === true;
-    document.getElementById("toggle-10m-percent").checked = settings.tenMPercent === true;
-    document.getElementById("toggle-level").checked = settings.level !== false;
-  } catch (error) {
-    console.error("Error loading settings:", error);
-  }
+function saveSession(){
+  localStorage.setItem(STORE.session, JSON.stringify({
+    baseline:state.baseline,
+    logs:state.logs,
+    lastGainAt:state.lastGainAt,
+    sessionStartedAt:state.sessionStartedAt
+  }));
 }
 
-function getSettings() {
-  return {
-    bxp: document.getElementById("toggle-bxp").checked,
-    currentLevel: document.getElementById("toggle-current-level").checked,
-    expHr: document.getElementById("toggle-exp-hr").checked,
-    expMin: document.getElementById("toggle-exp-min").checked,
-    perkChance: document.getElementById("toggle-perk-chance").checked,
-    oneMPercent: document.getElementById("toggle-1m-percent").checked,
-    tenMPercent: document.getElementById("toggle-10m-percent").checked,
-    level: document.getElementById("toggle-level").checked
+function applySettingsToInputs(){
+  $("show-level").checked = state.settings.level;
+  $("show-bxp").checked = state.settings.bxp;
+  $("show-gain").checked = state.settings.gain;
+  $("show-rate").checked = state.settings.rate;
+  $("show-eta").checked = state.settings.eta;
+  $("show-progress").checked = state.settings.progress;
+  $("highlight-active").checked = state.settings.highlightActive;
+  $("font-size").value = state.settings.fontSize;
+  $("font-size-value").textContent = state.settings.fontSize + "px";
+  document.documentElement.style.setProperty("--font-size", state.settings.fontSize + "px");
+}
+
+function saveSettings(){
+  state.settings = {
+    level:$("show-level").checked,
+    bxp:$("show-bxp").checked,
+    gain:$("show-gain").checked,
+    rate:$("show-rate").checked,
+    eta:$("show-eta").checked,
+    progress:$("show-progress").checked,
+    highlightActive:$("highlight-active").checked,
+    fontSize:Number($("font-size").value)||11
   };
+  localStorage.setItem(STORE.settings, JSON.stringify(state.settings));
+  applySettingsToInputs();
+  render();
 }
 
-function applySettingsPosition(position) {
-  const panel = document.getElementById("settings-panel");
-  const icon = document.getElementById("settings-icon");
-  
-  icon.className = icon.className.replace(/position-\w+/g, '');
-  
-  switch(position) {
-    case "bottom-right":
-      icon.classList.add("position-bottom-right");
-      panel.style.cssText = "position: fixed; bottom: 60px; right: 10px; top: auto; left: auto; transform: none;";
-      break;
-    case "bottom-left":
-      icon.classList.add("position-bottom-left");
-      panel.style.cssText = "position: fixed; bottom: 60px; left: 10px; top: auto; right: auto; transform: none;";
-      break;
-    case "top-left":
-      icon.classList.add("position-top-left");
-      panel.style.cssText = "position: fixed; top: 60px; left: 10px; bottom: auto; right: auto; transform: none;";
-      break;
-    case "top-right":
-      icon.classList.add("position-top-right");
-      panel.style.cssText = "position: fixed; top: 60px; right: 10px; bottom: auto; left: auto; transform: none;";
-      break;
-    case "top-left":
-    default:
-      icon.classList.add("position-top-left");
-      panel.style.cssText = "position: fixed; top: 60px; left: 10px; bottom: auto; right: auto; transform: none;";
-      break;
-  }
+function formatNumber(value){
+  if (!Number.isFinite(value)) return "—";
+  const n = Math.round(value);
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return (n/1e9).toFixed(2).replace(/\.00$/,"") + "B";
+  if (abs >= 1e6) return (n/1e6).toFixed(2).replace(/\.00$/,"") + "M";
+  if (abs >= 1e3) return (n/1e3).toFixed(1).replace(/\.0$/,"") + "K";
+  return n.toLocaleString();
 }
 
-function loadFontSize() {
-  const size = localStorage.getItem(XP_FONT_SIZE_KEY) || "12";
-  document.getElementById("xp-font-size").value = size;
-  document.getElementById("xp-font-size-value").textContent = size;
-  applyFontSize(size);
+function formatDuration(ms){
+  if (!Number.isFinite(ms) || ms < 0) return "—";
+  const total = Math.floor(ms/1000);
+  const h = Math.floor(total/3600);
+  const m = Math.floor((total%3600)/60);
+  const s = total%60;
+  return [h,m,s].map(v => String(v).padStart(2,"0")).join(":");
 }
 
-function saveFontSize(size) {
-  localStorage.setItem(XP_FONT_SIZE_KEY, size);
-  document.getElementById("xp-font-size-value").textContent = size;
-  applyFontSize(size);
+function levelInfo(totalXp){
+  const xp = Math.max(0, Number(totalXp)||0);
+  const level = Math.max(0, Math.floor((-1 + Math.sqrt(1 + (8*xp/5))) / 2));
+  const levelStart = 5 * level * (level + 1) / 2;
+  const nextLevel = level + 1;
+  const nextThreshold = 5 * nextLevel * (nextLevel + 1) / 2;
+  const inLevel = xp - levelStart;
+  const needed = Math.max(0, nextThreshold - xp);
+  const span = Math.max(1, nextThreshold - levelStart);
+  const pct = Math.max(0, Math.min(100, (inLevel/span)*100));
+  return {level,inLevel,needed,pct,nextThreshold};
 }
 
-function applyFontSize(size) {
-  document.documentElement.style.setProperty('--stat-font-size', size + 'px');
-}
-
-function savePosition() {
-  const app = document.getElementById("tracker-app");
-  if (app) {
-    const position = {
-      left: app.style.left,
-      top: app.style.top,
-      width: app.style.width,
-      height: app.style.height
-    };
-    localStorage.setItem(TRACKER_POSITION_KEY, JSON.stringify(position));
-  }
-  
-  // Reposition settings panel if needed
-  adjustSettingsPosition();
-}
-
-function adjustSettingsPosition() {
-  const app = document.getElementById("tracker-app");
-  const panel = document.getElementById("settings-panel");
-  
-  if (!app || !panel) return;
-  
-  const appRect = app.getBoundingClientRect();
-  const appWidth = appRect.width;
-  
-  // If tracker is narrow, adjust settings panel
-  if (appWidth < 350) {
-    panel.style.right = 'auto';
-    panel.style.left = '6px';
-    panel.style.width = 'calc(100% - 12px)';
-  } else {
-    panel.style.right = '6px';
-    panel.style.left = 'auto';
-    panel.style.width = 'min(230px, calc(100% - 12px))';
-  }
-}
-
-function loadPosition() {
-  const savedPosition = localStorage.getItem(TRACKER_POSITION_KEY);
-  if (savedPosition) {
-    try {
-      const position = JSON.parse(savedPosition);
-      const app = document.getElementById("tracker-app");
-      if (app && position) {
-        if (position.left) app.style.left = position.left;
-        if (position.top) app.style.top = position.top;
-        if (position.width) app.style.width = position.width;
-        if (position.height) app.style.height = position.height;
-      }
-    } catch (e) {
-      console.warn("Failed to load saved position:", e);
-    }
-  }
-}
-
-function renderStats() {
+function rollingRate(jobKey){
   const now = Date.now();
-  if (now - lastRenderTime < RENDER_THROTTLE_MS) {
-    return;
-  }
-  lastRenderTime = now;
-  
-  renderSummary();
-  
-  if (selectedJobs.length === 0) {
-    document.getElementById("job-list").style.display = "block";
-  }
+  const log = (state.logs[jobKey] || []).filter(x => now - x.time <= 10*60*1000);
+  if (log.length < 2) return 0;
+  const first = log[0], last = log[log.length-1];
+  const dt = last.time - first.time;
+  const dx = last.exp - first.exp;
+  if (dt <= 0 || dx <= 0) return 0;
+  return dx / dt * 3600000;
 }
 
-function renderSummary() {
-  const settings = getSettings();
-  
-  const tbody = document.getElementById("summary-tbody");
-  const thead = document.getElementById("summary-thead");
-  
-  if (selectedJobs.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="100%" class="text-center text-muted">Select jobs to track XP</td></tr>';
-    thead.innerHTML = '';
-    return;
-  }
-  
-  const hasAnyData = selectedJobs.some(jobKey => {
-    const exp = lastExps[jobKey];
-    return typeof exp === "number" && exp > 0;
-  });
-  
-  if (!hasAnyData) {
-    tbody.innerHTML = '<tr><td colspan="100%" class="text-center text-muted">Loading XP data... <br><small>Make sure the XP Tracker resource is running</small></td></tr>';
-    thead.innerHTML = '';
-    return;
-  }
-  
-  const columns = [
-    { key: "job", label: "Job" },
-    { key: "current", label: "Current XP" }
-  ];
-  
-  if (settings.currentLevel) columns.push({ key: "currentLevel", label: "Level" });
-  if (settings.bxp) columns.push({ key: "bxp", label: "BXP" });
-  if (settings.level) columns.push({ key: "level", label: "Next Level In" });
-  if (settings.expHr) columns.push({ key: "exp_hr", label: "XP/hr" });
-  if (settings.expMin) columns.push({ key: "exp_min", label: "XP/min" });
-  if (settings.oneMPercent) columns.push({ key: "1m_percent", label: "1M %" });
-  if (settings.tenMPercent) columns.push({ key: "10m_percent", label: "10M %" });
-  if (settings.perkChance) columns.push({ key: "perk", label: "Perk Chance" });
-  
-  thead.innerHTML = `<tr>${columns.map(col => `<th>${col.label}</th>`).join('')}</tr>`;
-  
-  const rows = [];
-  selectedJobs.forEach(jobKey => {
-    const job = JOBS.find(j => j.key === jobKey);
-    if (!job) return;
-    
-    const stats = calculateJobStats(jobKey);
-    const row = [];
-    
-    columns.forEach(col => {
-      if (col.key === "job") {
-        row.push(`<td>${job.label}</td>`);
-      }
-      else if (col.key === "current") {
-        row.push(`<td>${formatNumber(stats.currentExp)}</td>`);
-      }
-      else if (col.key === "currentLevel") {
-        const levelInfo = stats.levelInfo;
-        row.push(`<td>Level ${levelInfo.level}</td>`);
-      }
-      else if (col.key === "bxp") {
-        if (stats.bxp > 0) {
-          row.push(`<td><span class="badge text-bg-success">${formatNumber(stats.bxp)}</span></td>`);
-        } else {
-          row.push(`<td>—</td>`);
-        }
-      }
-      else if (col.key === "level") {
-        const levelInfo = stats.levelInfo;
-        const xpToNext = Math.round(levelInfo.expForNext - levelInfo.expInLevel);
-        row.push(`<td>${formatNumber(xpToNext)} XP</td>`);
-      }
-      else if (col.key === "exp_hr") {
-        row.push(`<td>${formatNumber(stats.expPerHour)}</td>`);
-      }
-      else if (col.key === "exp_min") {
-        row.push(`<td>${formatNumber(stats.expPerMin)}</td>`);
-      }
-      else if (col.key === "1m_percent") {
-        const pct = get1MPercentValue(jobKey);
-        if (pct === null) row.push(`<td>—</td>`);
-        else {
-          row.push(`<td>${renderPercent(pct)}</td>`);
-        }
-      }
-      else if (col.key === "10m_percent") {
-        const pct = get10MPercentValue(jobKey);
-        if (pct === null) row.push(`<td>—</td>`);
-        else {
-          row.push(`<td>${renderPercent(pct)}</td>`);
-        }
-      }
-      else if (col.key === "perk") {
-        row.push(`<td>${stats.perkChance}</td>`);
-      }
-    });
-    
-    rows.push(`<tr>${row.join('')}</tr>`);
-  });
-  
-  tbody.innerHTML = rows.join('');
+function sessionGain(jobKey){
+  const current = state.xp[jobKey];
+  const start = state.baseline[jobKey];
+  if (!Number.isFinite(current) || !Number.isFinite(start)) return 0;
+  return Math.max(0,current-start);
 }
 
-function calculateJobStats(jobKey) {
-  const currentExp = lastExps[jobKey] || 0;
-  const bxp = lastBXPs[jobKey] || 0;
-  const log = expLogs[jobKey] || [];
-  
-  let expPerHour = 0;
-  let expPerMin = 0;
-  
-  if (log.length >= 2) {
-    const recent = log.filter(entry => Date.now() - entry.time <= RECENT_WINDOW_MS);
-    if (recent.length >= 2) {
-      const firstEntry = recent[0];
-      const lastEntry = recent[recent.length - 1];
-      const timeDiff = lastEntry.time - firstEntry.time;
-      const expDiff = lastEntry.exp - firstEntry.exp;
-      
-      if (timeDiff > 0) {
-        expPerHour = Math.round((expDiff / timeDiff) * (1000 * 60 * 60));
-        expPerMin = Math.round(expPerHour / 60);
-      }
-    }
-  }
-
-  function getPerkChance() {
-    if (!log || log.length < 2) return "—";
-    
-    const last = log[log.length - 1];
-    const exp = last.exp;
-    
-    if (exp >= 1_000_000) return "Guaranteed";
-    
-    const prev = log[log.length - 2];
-    const gained = last.exp - prev.exp;
-    
-    if (gained > 0) {
-      const dropsLeft = (1_000_000 - exp) / gained;
-      if (dropsLeft <= 1) {
-        return "Guaranteed";
-      } else {
-        return formatNumber(Math.round(dropsLeft));
-      }
-    }
-    return "—";
-  }
-  
-  return {
-    currentExp,
-    bxp,
-    expPerHour,
-    expPerMin,
-    oneM: ((currentExp / 1000000) * 100).toFixed(1),
-    tenM: ((currentExp / 10000000) * 100).toFixed(1),
-    perkChance: getPerkChance(),
-    levelInfo: getLevelInfo(currentExp)
-  };
-}
-
-function backfillExpLogIfMissing(jobKey) {
-  if (typeof lastExps[jobKey] === "number" && (!Array.isArray(expLogs[jobKey]) || expLogs[jobKey].length < 2)) {
-    const exp = lastExps[jobKey];
-    const now = Date.now();
-    expLogs[jobKey] = [
-      { time: now - 5000, exp },
-      { time: now, exp }
-    ];
-    initialExps[jobKey] = exp;
-    hasFirstGain[jobKey] = true;
-  }
-  if (typeof lastExps[jobKey] === "number" && (!Array.isArray(expLogs[jobKey]) || expLogs[jobKey].length < 2)) {
-    const exp = lastExps[jobKey];
-    const now = Date.now();
-    expLogs[jobKey] = [
-      { time: now - 5000, exp },
-      { time: now, exp }
-    ];
-    initialExps[jobKey] = exp;
-    hasFirstGain[jobKey] = true;
-  }
-}
-
-function setupUIHandlers() {
-  document.getElementById("settings-icon").addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const panel = document.getElementById("settings-panel");
-    if (panel.style.display === "none" || !panel.style.display) {
-      panel.style.display = "block";
-      adjustSettingsPosition(); // Adjust position when opening
-    } else {
-      panel.style.display = "none";
-    }
-  });
-  
-  document.addEventListener("click", (e) => {
-    const panel = document.getElementById("settings-panel");
-    const icon = document.getElementById("settings-icon");
-    
-    if (!panel.contains(e.target) && !icon.contains(e.target)) {
-      panel.style.display = "none";
-    }
-  });
-  
-  ["toggle-bxp", "toggle-current-level", "toggle-exp-hr", "toggle-exp-min", "toggle-1m-percent", 
-   "toggle-10m-percent", "toggle-perk-chance", "toggle-level"].forEach(id => {
-    document.getElementById(id).addEventListener("change", () => {
-      saveSettings();
-      renderSummary();
-    });
-  });
-  
-  document.getElementById("xp-font-size").addEventListener("input", function() {
-    saveFontSize(this.value);
-  });
-  
-  document.getElementById("reset-exp-log").addEventListener("click", resetAllData);
-}
-
-function renderJobPills() {
-  const jobList = document.getElementById("job-list");
-  const sortedJobs = getSortedJobs();
-  
-  const pills = sortedJobs.map(job => {
-    const isSelected = selectedJobs.includes(job.key);
-    return `
-      <label class="job-pill ${isSelected ? 'selected' : ''}">
-        <input type="checkbox" 
-               data-job-key="${job.key}" 
-               ${isSelected ? 'checked' : ''}
-               onchange="toggleJob('${job.key}')">
-        ${job.label}
-      </label>
-    `;
-  }).join('');
-  
-  jobList.innerHTML = pills;
-}
-
-function toggleJob(jobKey) {
-  const index = selectedJobs.indexOf(jobKey);
-  if (index === -1) {
-    selectedJobs.push(jobKey);
-  } else {
-    selectedJobs.splice(index, 1);
-  }
-  
-  saveData();
-  renderJobPills();
-
-  lastRenderTime = 0;
-  renderStats();
-}
-
-window.toggleJob = toggleJob;
-
-function processGameData(data) {
+function activeSkillKey(){
   const now = Date.now();
-  let inventory = {};
-  let hasExpChanges = false;
-  
-  if (data.inventory) {
-    try {
-      inventory = typeof data.inventory === "string" ? JSON.parse(data.inventory) : data.inventory;
-      if (inventory) lastInventoryObj = inventory;
-    } catch {
-      inventory = lastInventoryObj;
-    }
-  } else {
-    inventory = lastInventoryObj;
+  let freshest = null;
+  let bestTime = 0;
+  for (const [key,time] of Object.entries(state.lastGainAt)) {
+    if (time > bestTime && now-time <= 120000) { bestTime=time; freshest=key; }
   }
-  
-  JOBS.forEach(job => {
-    const expKey = JOB_EXP_KEYS[job.key];
-    const exp = data[expKey];
-    if (typeof exp === "number") {
-      const oldExp = lastExps[job.key];
-      if (oldExp !== exp) {
-        hasExpChanges = true;
-      }
-      lastExps[job.key] = exp;
-    }
-  });
-  
-  selectedJobs.forEach(jobKey => {
-    const job = JOBS.find(j => j.key === jobKey);
-    if (!job) return;
-    
-    const expKey = JOB_EXP_KEYS[jobKey];
-    const exp = data[expKey];
-    
-    if (typeof exp === "number") {
-      if (!expLogs[jobKey]) expLogs[jobKey] = [];
-      const log = expLogs[jobKey];
-      
-      if (!hasFirstGain[jobKey]) {
-        if (typeof initialExps[jobKey] !== "number") {
-          initialExps[jobKey] = exp;
-        }
-      }
-      
-      if (!hasFirstGain[jobKey] && exp !== initialExps[jobKey]) {
-        hasFirstGain[jobKey] = true;
-        if (typeof initialExps[jobKey] !== "number" || initialExps[jobKey] === 0) {
-          initialExps[jobKey] = exp - (exp - (log[log.length - 1]?.exp || 0));
-        }
-      }
-      
-      const lastEntry = log[log.length - 1];
-      
-      if (lastEntry === undefined) {
-        lastUpdateTime[jobKey] = now;
-      } else if (exp > lastEntry.exp) {
-        const gain = exp - lastEntry.exp;
-        log.push({ time: now, exp });
-        lastUpdateTime[jobKey] = now;
-        
-        const lastDisplayed = lastDisplayedExps[jobKey] || 0;
-        if (exp > lastDisplayed) {
-          lastDisplayedExps[jobKey] = exp;
-        }
-      }
-      
-      if (log.length === 0 && hasFirstGain[jobKey]) {
-        log.push({ time: now - 5000, exp: initialExps[jobKey] });
-        log.push({ time: now, exp });
-        lastUpdateTime[jobKey] = now;
-      }
-      
-      if (log.length > 2) {
-        const recentCutoff = now - RECENT_WINDOW_MS;
-        expLogs[jobKey] = log.filter((entry, idx) => {
-          return idx === 0 || entry.time >= recentCutoff;
-        });
-      }
-    }
-    
-    const bxpToken = JOB_BXP_KEYS[jobKey];
-    let bxpObj;
-    
-    if (bxpToken && data[bxpToken]) {
-      bxpObj = data[bxpToken];
-    }
-    else if (bxpToken && inventory && typeof inventory === 'object') {
-      bxpObj = inventory[bxpToken];
-      if (!bxpObj) {
-        const fallbackKey = Object.keys(inventory).find(k => k.startsWith(bxpToken));
-        if (fallbackKey) bxpObj = inventory[fallbackKey];
-      }
-    }
-    
-    if (bxpObj && typeof bxpObj.amount === "number") {
-      lastBXPs[jobKey] = bxpObj.amount;
-    } else if (typeof bxpObj === "number") {
-      lastBXPs[jobKey] = bxpObj;
-    } else {
-      delete lastBXPs[jobKey];
-    }
-  });
-  
-  saveData();
-  renderStats();
+  if (freshest) return freshest;
+  const current = String(state.job||"").toLowerCase();
+  const byJob = JOBS.find(j => j.jobs.includes(current));
+  return byJob?.key || null;
 }
 
-function requestDataOnce(force = false) {
-  if (hasRequestedOnce && !force) return;
-  hasRequestedOnce = true;
-  try {
-    const keys = getAllRequiredKeys();
-    window.parent.postMessage({ 
-      type: "getNamedData",
-      keys: keys
-    }, "*");
-  } catch (e) {
-    console.error("Failed to send message to parent:", e);
-    // Fallback to old method
-    window.parent.postMessage({ type: "getData" }, "*");
-  }
+function getBxp(inventory, token){
+  if (!inventory || typeof inventory !== "object" || !token) return null;
+  const direct = inventory[token];
+  if (typeof direct === "number") return direct;
+  if (direct && typeof direct.amount === "number") return direct.amount;
+  const fallbackKey = Object.keys(inventory).find(k => k === token || k.startsWith(token+"|"));
+  const fallback = fallbackKey ? inventory[fallbackKey] : null;
+  if (typeof fallback === "number") return fallback;
+  if (fallback && typeof fallback.amount === "number") return fallback.amount;
+  return null;
 }
 
-function init() {
-  loadData();
-  loadPosition();
-  renderJobPills();
-  renderStats();
-  setupUIHandlers();
-  
-  saveSettings();
-  
-  // Adjust settings position on window resize
-  window.addEventListener('resize', adjustSettingsPosition);
-  
-  const isNui = window.parent !== window || navigator.userAgent.includes('CitizenFX');
-  if (isNui) {
-    document.body.classList.add('no-blur');
+function processGameData(data){
+  if (!data || typeof data !== "object") return;
+  const now = Date.now();
+  state.received = true;
+  if (typeof data.job === "string") state.job = data.job;
+  if (typeof data.job_name === "string") state.jobName = data.job_name;
+  if (typeof data.job_title === "string") state.jobTitle = data.job_title;
+
+  let inventory = data.inventory;
+  if (typeof inventory === "string") inventory = safeJson(inventory,{});
+
+  for (const job of JOBS) {
+    const value = data[job.exp];
+    if (Number.isFinite(value)) {
+      const previous = state.xp[job.key];
+      state.xp[job.key] = value;
+
+      if (!Number.isFinite(state.baseline[job.key])) {
+        state.baseline[job.key] = value;
+        state.logs[job.key] = [{time:now,exp:value}];
+      } else if (Number.isFinite(previous) && value > previous) {
+        const log = state.logs[job.key] || (state.logs[job.key] = []);
+        if (!log.length) log.push({time:now-1,exp:previous});
+        log.push({time:now,exp:value});
+        state.lastGainAt[job.key] = now;
+        const cutoff = now - 30*60*1000;
+        state.logs[job.key] = log.filter((entry,i) => i===0 || entry.time >= cutoff);
+      } else if (!state.logs[job.key]?.length) {
+        state.logs[job.key] = [{time:now,exp:value}];
+      }
+    }
+
+    const bxp = getBxp(inventory,job.bxp);
+    if (Number.isFinite(bxp)) state.bxp[job.key] = bxp;
   }
-  
-  window.addEventListener("message", (event) => {
-    const msg = event.data;
-    if (msg && msg.type === "data" && msg.data) {
-      hasReceivedAnyData = true;         
-      processGameData(msg.data);
-    }
-    else if (msg && msg.type === "chat:open") {
-      document.body.classList.add('no-blur');
-    }
-    else if (msg && msg.type === "chat:close") {
-      document.body.classList.remove('no-blur');
-    }
-  });
 
-  // Initial optimized data request
-  requestDataOnce();
+  saveSession();
+  render();
+}
 
-  // Retry mechanism if no data received within 1.2 seconds
+function requestData(){
+  window.parent.postMessage({type:"getNamedData",keys:KEYS},"*");
   setTimeout(() => {
-    if (!hasReceivedAnyData) {
-      requestDataOnce(true);
+    if (!state.received) window.parent.postMessage({type:"getData"},"*");
+  },900);
+}
+
+function renderPicker(){
+  const sorted = [...JOBS].sort((a,b)=>a.label.localeCompare(b.label));
+  $("job-list").innerHTML = sorted.map(job => {
+    const selected = state.selected.includes(job.key);
+    return '<label class="job-chip '+(selected?"selected":"")+'"><input type="checkbox" data-key="'+job.key+'" '+(selected?"checked":"")+'> '+job.label+'</label>';
+  }).join("");
+  $("job-list").querySelectorAll("input").forEach(input => input.addEventListener("change",() => {
+    const key = input.dataset.key;
+    if (input.checked && !state.selected.includes(key)) state.selected.push(key);
+    if (!input.checked) state.selected = state.selected.filter(x=>x!==key);
+    localStorage.setItem(STORE.selected,JSON.stringify(state.selected));
+    renderPicker(); render();
+  }));
+}
+
+function render(){
+  const active = activeSkillKey();
+  $("connection-status").textContent = state.received
+    ? "Live · "+(state.jobName || state.jobTitle || state.job || "job unknown")
+    : "Waiting for Transport Tycoon…";
+  $("connection-status").classList.toggle("live",state.received);
+
+  const totalGain = JOBS.reduce((sum,j)=>sum+sessionGain(j.key),0);
+  $("session-total-gain").textContent = "+"+formatNumber(totalGain)+" XP";
+  $("active-skill").textContent = jobByKey(active)?.label || state.jobName || "—";
+
+  const cols = [
+    {key:"skill",label:"Skill"},
+    {key:"xp",label:"Current XP"}
+  ];
+  if (state.settings.level) cols.push({key:"level",label:"Level"});
+  if (state.settings.bxp) cols.push({key:"bxp",label:"BXP"});
+  if (state.settings.gain) cols.push({key:"gain",label:"Session"});
+  if (state.settings.rate) cols.push({key:"rate",label:"XP/hr"});
+  if (state.settings.eta) cols.push({key:"eta",label:"Next lvl ETA"});
+  if (state.settings.progress) cols.push({key:"progress",label:"Progress"});
+
+  $("summary-head").innerHTML = "<tr>"+cols.map(c=>"<th>"+c.label+"</th>").join("")+"</tr>";
+
+  const jobs = state.selected.map(jobByKey).filter(Boolean);
+  if (!jobs.length) {
+    $("summary-body").innerHTML = '<tr><td colspan="'+cols.length+'" class="empty">Choose at least one skill from ☰</td></tr>';
+    return;
+  }
+
+  const any = jobs.some(j=>Number.isFinite(state.xp[j.key]));
+  if (!any) {
+    $("summary-body").innerHTML = '<tr><td colspan="'+cols.length+'" class="empty">Waiting for direct XP counters…</td></tr>';
+    return;
+  }
+
+  $("summary-body").innerHTML = jobs.map(job => {
+    const xp = state.xp[job.key];
+    const lvl = levelInfo(xp);
+    const gain = sessionGain(job.key);
+    const rate = rollingRate(job.key);
+    const eta = rate > 0 && lvl.needed > 0 ? lvl.needed/rate*3600000 : null;
+    const isActive = state.settings.highlightActive && active===job.key;
+
+    const cells = cols.map(col => {
+      if (col.key==="skill") return '<td><span class="skill-name">'+job.label+'</span><span class="skill-key">'+job.exp.replace("exp_","")+'</span></td>';
+      if (col.key==="xp") return '<td>'+formatNumber(xp)+'</td>';
+      if (col.key==="level") return '<td>'+lvl.level+'</td>';
+      if (col.key==="bxp") return '<td class="bxp">'+formatNumber(state.bxp[job.key])+'</td>';
+      if (col.key==="gain") return '<td class="'+(gain>0?"gain":"muted")+'">'+(gain>0?"+":"")+formatNumber(gain)+'</td>';
+      if (col.key==="rate") return '<td class="'+(rate>0?"rate":"muted")+'">'+formatNumber(rate)+'</td>';
+      if (col.key==="eta") return '<td class="muted">'+(eta===null?"—":formatDuration(eta))+'</td>';
+      if (col.key==="progress") return '<td class="progress-cell"><div class="progress-wrap"><div class="bar"><span style="width:'+lvl.pct.toFixed(1)+'%"></span></div><span class="pct">'+lvl.pct.toFixed(1)+'%</span></div></td>';
+      return "<td>—</td>";
+    }).join("");
+
+    return '<tr class="'+(isActive?"active-row":"")+'">'+cells+"</tr>";
+  }).join("");
+}
+
+function resetSession(){
+  state.baseline = {};
+  state.logs = {};
+  state.lastGainAt = {};
+  state.sessionStartedAt = Date.now();
+  for (const job of JOBS) {
+    if (Number.isFinite(state.xp[job.key])) {
+      state.baseline[job.key] = state.xp[job.key];
+      state.logs[job.key] = [{time:Date.now(),exp:state.xp[job.key]}];
     }
-  }, 1200);
+  }
+  saveSession(); render();
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
-} else {
-  init();
-}
-
-
-function renderPercent(pct){
-  if (pct == null || isNaN(pct)) return '—';
-  const val = Math.max(0, Math.min(100, +pct.toFixed(1)));
-  return `<span class="text-white">${val}%</span>`;
-}
-
-const escapeListener = (e) => {
-  if (e.key === "Escape") {
-    window.parent.postMessage({type: "pin"}, "*");
-  }
-};
-window.addEventListener('keydown', escapeListener);
-
-(() => {
-  const title = document.querySelector('.panel-header .title');
-  const jobList = document.getElementById('job-list');
-  if (title && jobList) {
-    title.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      jobList.style.display = jobList.style.display === 'none' || jobList.style.display === '' ? 'block' : 'none';
-    });
-  }
-})();
-
-(() => {
-  const btn = document.getElementById('minimize-btn');
-  const toolbar = document.querySelector('.toolbar');
-  if (btn && toolbar) {
-    btn.addEventListener('click', () => {
-      toolbar.style.display = toolbar.style.display === 'none' ? '' : 'none';
-    });
-  }
-})();
-
-(() => {
-  const range = document.getElementById('xp-font-size');
-  const out = document.getElementById('xp-font-size-value');
-  const table = document.getElementById('summary-table');
-  if (range && out && table) {
-    const apply = (px) => {
-      table.style.fontSize = `${px}px`;
-      out.textContent = `${px}px`;
-    };
-    apply(range.value);
-    range.addEventListener('input', () => apply(range.value));
-  }
-})();
-
-(() => {
-  const app = document.getElementById('tracker-app');
-  const handle = document.getElementById('drag-handle');
-  const rh = document.getElementById('resize-handle');
-  if (!app || !handle) return;
-  
-  let sx=0, sy=0, ax=0, ay=0, dragging=false;
-  let sw=0, sh=0, resizing=false;
-
-  function startDrag(clientX, clientY, e) {
-    if (e && e.target.closest('button')) return;
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
+function setupUi(){
+  $("jobs-btn").addEventListener("click",e=>{e.stopPropagation();$("job-picker").classList.toggle("hidden");$("settings-panel").classList.add("hidden")});
+  $("settings-btn").addEventListener("click",e=>{e.stopPropagation();$("settings-panel").classList.toggle("hidden");$("job-picker").classList.add("hidden")});
+  $("refresh-btn").addEventListener("click",requestData);
+  $("minimize-btn").addEventListener("click",()=>{
+    state.minimized=!state.minimized;
+    $("body").classList.toggle("minimized",state.minimized);
+    $("minimize-btn").textContent=state.minimized?"+":"−";
+    if (state.minimized) $("tracker-app").style.height="48px";
+    else {
+      const saved=safeJson(localStorage.getItem(STORE.size),null);
+      $("tracker-app").style.height=(saved?.height||310)+"px";
     }
-    dragging = true; sx = clientX; sy = clientY;
-    const rect = app.getBoundingClientRect(); ax = rect.left; ay = rect.top;
-    document.body.style.userSelect = 'none';
-    document.body.style.webkitUserSelect = 'none';
-    document.body.style.msUserSelect = 'none';
-    document.body.style.mozUserSelect = 'none';
-    document.documentElement.style.cursor = 'grabbing';
-    handle.classList.add('dragging');
-  }
-
-  handle.addEventListener('mousedown', (e) => {
-    startDrag(e.clientX, e.clientY, e);
   });
+  $("select-all").addEventListener("click",()=>{state.selected=JOBS.map(j=>j.key);localStorage.setItem(STORE.selected,JSON.stringify(state.selected));renderPicker();render()});
+  $("select-none").addEventListener("click",()=>{state.selected=[];localStorage.setItem(STORE.selected,"[]");renderPicker();render()});
+  ["show-level","show-bxp","show-gain","show-rate","show-eta","show-progress","highlight-active"].forEach(id=>$(id).addEventListener("change",saveSettings));
+  $("font-size").addEventListener("input",saveSettings);
+  $("reset-session").addEventListener("click",resetSession);
+  document.addEventListener("click",e=>{
+    if (!e.target.closest("#settings-panel")&&!e.target.closest("#settings-btn")) $("settings-panel").classList.add("hidden");
+  });
+  window.addEventListener("keydown",e=>{if(e.key==="Escape")window.parent.postMessage({type:"pin"},"*")});
+}
 
-  handle.addEventListener('touchstart', (e) => {
-    if (e.target.closest('button')) return;
+function setupDragResize(){
+  const app=$("tracker-app"), handle=$("drag-handle"), resize=$("resize-handle");
+  let drag=null, size=null;
+
+  handle.addEventListener("pointerdown",e=>{
+    if(e.target.closest("button"))return;
+    const r=app.getBoundingClientRect();
+    drag={id:e.pointerId,dx:e.clientX-r.left,dy:e.clientY-r.top};
+    handle.setPointerCapture(e.pointerId);
+    handle.classList.add("dragging");
     e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
-    const touch = e.touches[0];
-    startDrag(touch.clientX, touch.clientY, e);
+  });
+  handle.addEventListener("pointermove",e=>{
+    if(!drag||drag.id!==e.pointerId)return;
+    const w=app.offsetWidth,h=app.offsetHeight;
+    const left=Math.max(0,Math.min(window.innerWidth-w,e.clientX-drag.dx));
+    const top=Math.max(0,Math.min(window.innerHeight-h,e.clientY-drag.dy));
+    app.style.left=left+"px";app.style.top=top+"px";
+  });
+  handle.addEventListener("pointerup",e=>{
+    if(!drag)return;
+    localStorage.setItem(STORE.position,JSON.stringify({left:parseFloat(app.style.left)||0,top:parseFloat(app.style.top)||0}));
+    drag=null;handle.classList.remove("dragging");
   });
 
-  if (window.PointerEvent) {
-    handle.addEventListener('pointerdown', (e) => {
-      if (e.target.closest('button')) return;
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-      handle.setPointerCapture(e.pointerId);
-      startDrag(e.clientX, e.clientY, e);
-    });
-  }
-  
-  if (rh) {
-    function startResize(clientX, clientY, e) {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-      }
-      resizing = true; sx = clientX; sy = clientY;
-      const rect = app.getBoundingClientRect(); sw = rect.width; sh = rect.height;
-      document.body.style.userSelect = 'none';
-      document.body.style.webkitUserSelect = 'none';
-      document.body.style.msUserSelect = 'none';
-      document.body.style.mozUserSelect = 'none';
-      document.documentElement.style.cursor = 'nwse-resize';
-    }
+  resize.addEventListener("pointerdown",e=>{
+    const r=app.getBoundingClientRect();
+    size={id:e.pointerId,x:e.clientX,y:e.clientY,w:r.width,h:r.height};
+    resize.setPointerCapture(e.pointerId);e.preventDefault();e.stopPropagation();
+  });
+  resize.addEventListener("pointermove",e=>{
+    if(!size||size.id!==e.pointerId)return;
+    app.style.width=Math.max(430,size.w+(e.clientX-size.x))+"px";
+    if(!state.minimized) app.style.height=Math.max(150,size.h+(e.clientY-size.y))+"px";
+  });
+  resize.addEventListener("pointerup",()=>{
+    if(!size)return;
+    if(!state.minimized)localStorage.setItem(STORE.size,JSON.stringify({width:app.offsetWidth,height:app.offsetHeight}));
+    size=null;
+  });
+}
 
-    rh.addEventListener('mousedown', (e) => {
-      startResize(e.clientX, e.clientY, e);
-    });
+function init(){
+  load();
+  renderPicker();
+  setupUi();
+  setupDragResize();
 
-    rh.addEventListener('touchstart', (e) => {
-      const touch = e.touches[0];
-      startResize(touch.clientX, touch.clientY, e);
-    });
+  const nui = window.parent !== window || navigator.userAgent.includes("CitizenFX");
+  if(nui)document.body.classList.add("no-blur");
 
-    if (window.PointerEvent) {
-      rh.addEventListener('pointerdown', (e) => {
-        rh.setPointerCapture(e.pointerId);
-        startResize(e.clientX, e.clientY, e);
-      });
-    }
-
-    rh.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    });
-  }
-
-  function handleMove(clientX, clientY, e) {
-    if (dragging) {
-      if (e) e.preventDefault();
-      const dx = clientX - sx, dy = clientY - sy;
-      app.style.transform = `translate(${dx}px, ${dy}px)`;
-    } else if (resizing) {
-      if (e) e.preventDefault();
-      const dx = clientX - sx, dy = clientY - sy;
-      const newWidth = Math.max(280, sw + dx);
-      const newHeight = Math.max(120, sh + dy);
-      app.style.width  = `${newWidth}px`;
-      app.style.height = `${newHeight}px`;
-    }
-  }
-  
-  window.addEventListener('mousemove', (e) => {
-    handleMove(e.clientX, e.clientY, e);
+  window.addEventListener("message",event=>{
+    const msg=event.data;
+    if(msg?.type==="data"&&msg.data)processGameData(msg.data);
+    else if(msg?.type==="chat:open")document.body.classList.add("no-blur");
+    else if(msg?.type==="chat:close")document.body.classList.remove("no-blur");
   });
 
-  window.addEventListener('touchmove', (e) => {
-    if (dragging || resizing) {
-      const touch = e.touches[0];
-      handleMove(touch.clientX, touch.clientY, e);
-    }
-  });
+  setInterval(()=>{
+    $("session-time").textContent=formatDuration(Date.now()-state.sessionStartedAt);
+    render();
+  },1000);
 
-  if (window.PointerEvent) {
-    window.addEventListener('pointermove', (e) => {
-      handleMove(e.clientX, e.clientY, e);
-    });
-  }
+  render();
+  requestData();
+}
 
-  function endDrag() {
-    if (dragging) {
-      const transform = app.style.transform;
-      const match = transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/);
-      if (match) {
-        const dx = parseFloat(match[1]) || 0;
-        const dy = parseFloat(match[2]) || 0;
-        app.style.transform = '';
-        app.style.left = `${ax + dx}px`;
-        app.style.top = `${ay + dy}px`;
-      }
-      savePosition();
-    } else if (resizing) {
-      savePosition();
-    }
-    dragging = false; 
-    resizing = false; 
-    document.body.style.userSelect = ''; 
-    document.body.style.webkitUserSelect = '';
-    document.body.style.msUserSelect = '';
-    document.body.style.mozUserSelect = '';
-    document.documentElement.style.cursor = '';
-    handle.classList.remove('dragging');
-  }
-
-  window.addEventListener('mouseup', endDrag);
-  window.addEventListener('touchend', endDrag);
-  if (window.PointerEvent) {
-    window.addEventListener('pointerup', endDrag);
-  }
-
-  handle.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  });
-})();
-
-(() => {
-  const btn = document.getElementById('toggle-job-list');
-  const list = document.getElementById('job-list');
-  if (btn && list) {
-    btn.addEventListener('click', () => {
-      list.style.display = (list.style.display === 'none' || !list.style.display) ? 'block' : 'none';
-    });
-  }
-})();
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);
+else init();
