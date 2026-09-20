@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Ice Cream Tracker</title>
+	<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+	<div id="tracker">
+		<div id="header">🍦 Ice Cream Tracker</div>
+		<div class="count-line" id="icecream-count">🍦 Ice Creams: Loading...</div>
+		<div class="count-line" id="chest-count">🎁 Summer Chests: Loading...</div>
+		<div class="count-line" id="icecream-sold" style="display: none;">🧾 Ice Creams Sold: 0</div>
+		<div class="count-line" id="seller-title" style="display: none;"></div>
+
+		
+
+		<button id="settings-toggle" style="margin-top: 10px;">⚙️ Settings</button>
+
+		<div id="settings-panel" style="display: none; margin-top: 10px;">
+			<label style="font-size: 14px; display: flex; align-items: center; gap: 6px;">
+				<input type="checkbox" id="selling-toggle" />
+				Enable Ice Cream Selling Mode
+			</label>
+			<label style="font-size: 14px; display: flex; align-items: center; gap: 6px; margin-top: 6px;">
+				<input type="checkbox" id="debug-toggle" />
+				Toggle Debug Log
+			</label>
+		</div>
+
+		<div id="debug-console"></div>
+		<div id="resize-handle"></div>
+	</div>
+
+	<script src="script.js"></script>
+</body>
+</html>
