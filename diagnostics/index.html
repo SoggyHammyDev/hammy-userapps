@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Hammy Diagnostics - Transport Tycoon</title>
+  <link rel="shortcut icon" type="image/png" href="https://tidalfaction.com/tidal.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="app" class="app-shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">Transport Tycoon UserApp</div>
+        <h1>Hammy Diagnostics</h1>
+        <p class="subtitle">Live API explorer, event recorder, snapshots and command tester.</p>
+      </div>
+      <div class="topbar-actions">
+        <span id="connection-pill" class="pill pill-warn">Waiting for game data</span>
+        <button id="refresh-data" class="btn btn-primary" type="button">Request Data</button>
+        <button id="pin-app" class="btn" type="button">Pin</button>
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="Diagnostic sections">
+      <button class="tab active" data-tab="live" type="button">Live Data <span id="live-count" class="count">0</span></button>
+      <button class="tab" data-tab="events" type="button">Event Log <span id="event-count" class="count">0</span></button>
+      <button class="tab" data-tab="snapshots" type="button">Snapshots</button>
+      <button class="tab" data-tab="commands" type="button">Commands</button>
+      <button class="tab" data-tab="session" type="button">Session</button>
+    </nav>
+
+    <section id="panel-live" class="panel active">
+      <div class="toolbar">
+        <input id="live-search" class="input grow" type="search" placeholder="Search key or value...">
+        <select id="live-filter" class="input">
+          <option value="all">All keys</option>
+          <option value="documented">Documented</option>
+          <option value="unknown">Undocumented</option>
+          <option value="trigger">Triggers</option>
+          <option value="temp">Temporary</option>
+          <option value="chest">Chest</option>
+          <option value="players">Server shared</option>
+          <option value="local">Local shared</option>
+          <option value="runway">Runways</option>
+        </select>
+        <button id="clear-live" class="btn" type="button">Clear</button>
+      </div>
+      <div class="summary-grid">
+        <div class="summary-card"><span>Unique keys</span><strong id="summary-keys">0</strong></div>
+        <div class="summary-card"><span>Undocumented</span><strong id="summary-unknown">0</strong></div>
+        <div class="summary-card"><span>Total updates</span><strong id="summary-updates">0</strong></div>
+        <div class="summary-card"><span>Last update</span><strong id="summary-last">—</strong></div>
+      </div>
+      <div id="live-table" class="data-table"></div>
+    </section>
+
+    <section id="panel-events" class="panel">
+      <div class="toolbar">
+        <input id="event-search" class="input grow" type="search" placeholder="Search events...">
+        <label class="check"><input id="pause-events" type="checkbox"> Pause display</label>
+        <button id="clear-events" class="btn" type="button">Clear log</button>
+      </div>
+      <div id="event-log" class="event-log"></div>
+    </section>
+
+    <section id="panel-snapshots" class="panel">
+      <div class="snapshot-actions">
+        <button id="snapshot-a" class="btn btn-primary" type="button">Capture Snapshot A</button>
+        <button id="snapshot-b" class="btn btn-primary" type="button">Capture Snapshot B</button>
+        <button id="clear-snapshots" class="btn" type="button">Clear</button>
+      </div>
+      <p class="hint">Capture A, perform an in-game action, capture B, then inspect exactly what changed.</p>
+      <div class="snapshot-status">
+        <span id="snapshot-a-status">A: not captured</span>
+        <span id="snapshot-b-status">B: not captured</span>
+      </div>
+      <div id="snapshot-diff" class="data-table"></div>
+    </section>
+
+    <section id="panel-commands" class="panel">
+      <div class="command-grid">
+        <article class="command-card">
+          <h2>Data</h2>
+          <button data-command="getData" class="btn btn-primary" type="button">getData</button>
+          <div class="field-row">
+            <input id="named-keys" class="input grow" placeholder="wallet,bank,job,inventory">
+            <button id="send-named-data" class="btn" type="button">getNamedData</button>
+          </div>
+        </article>
+
+        <article class="command-card">
+          <h2>Messages</h2>
+          <input id="message-text" class="input" value="Hammy Diagnostics test">
+          <div class="button-row">
+            <button data-text-command="notification" class="btn" type="button">Notification</button>
+            <button data-text-command="message" class="btn" type="button">Message</button>
+            <button data-text-command="oneliner" class="btn" type="button">Oneliner</button>
+          </div>
+          <div class="field-row">
+            <input id="info-time" class="input small-input" type="number" min="1" value="5">
+            <button id="send-info" class="btn" type="button">Info</button>
+          </div>
+        </article>
+
+        <article class="command-card">
+          <h2>Waypoint</h2>
+          <div class="field-row">
+            <input id="waypoint-x" class="input" type="number" step="any" placeholder="X">
+            <input id="waypoint-y" class="input" type="number" step="any" placeholder="Y">
+            <button id="send-waypoint" class="btn" type="button">Set</button>
+          </div>
+          <button id="use-player-position" class="btn subtle" type="button">Use current player X/Y</button>
+        </article>
+
+        <article class="command-card">
+          <h2>Sound</h2>
+          <div class="field-row">
+            <input id="sfx-id" class="input small-input" type="number" min="1" max="17" value="16">
+            <button id="send-sfx" class="btn" type="button">Play SFX</button>
+          </div>
+        </article>
+
+        <article class="command-card">
+          <h2>Shared Data</h2>
+          <input id="share-key" class="input" placeholder="Key">
+          <input id="share-value" class="input" placeholder="Value">
+          <div class="button-row">
+            <button id="share-local" class="btn" type="button">Local</button>
+            <button id="share-server" class="btn" type="button">Server</button>
+          </div>
+        </article>
+
+        <article class="command-card">
+          <h2>Console Command</h2>
+          <input id="console-command" class="input" placeholder="userapp_trigger test">
+          <button id="send-console" class="btn" type="button">sendCommand</button>
+          <p class="warning-text">Runs a FiveM client console command. Only send commands you intend to run.</p>
+        </article>
+
+        <article class="command-card">
+          <h2>Popup</h2>
+          <input id="popup-title" class="input" value="Hammy Diagnostics">
+          <input id="popup-text" class="input" value="Popup test successful.">
+          <button id="send-popup" class="btn" type="button">Show Popup</button>
+        </article>
+
+        <article class="command-card">
+          <h2>App Control</h2>
+          <div class="button-row">
+            <button data-command="pin" class="btn" type="button">Pin</button>
+            <button data-command="close" class="btn btn-danger" type="button">Close</button>
+          </div>
+        </article>
+      </div>
+      <div id="command-result" class="command-result">Commands sent from this page will appear here.</div>
+    </section>
+
+    <section id="panel-session" class="panel">
+      <div class="session-grid">
+        <article class="command-card">
+          <h2>Discovery Export</h2>
+          <p>Exports the complete session: latest values, discovered keys, update counts, events and snapshot diff.</p>
+          <div class="button-row">
+            <button id="copy-session" class="btn btn-primary" type="button">Copy JSON</button>
+            <button id="download-session" class="btn" type="button">Download JSON</button>
+          </div>
+        </article>
+        <article class="command-card">
+          <h2>Runtime</h2>
+          <div id="runtime-info" class="runtime-list"></div>
+        </article>
+        <article class="command-card">
+          <h2>Trigger Watch</h2>
+          <p>Use configured UserApp trigger binds or run <code>userapp_trigger test</code>.</p>
+          <div id="trigger-list" class="trigger-list"><span class="muted">No triggers seen yet.</span></div>
+        </article>
+      </div>
+    </section>
+
+    <footer>
+      <span>Hammy Diagnostics v1.0</span>
+      <span id="footer-state">No game data received yet.</span>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
