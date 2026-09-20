@@ -73,17 +73,17 @@ function updateHUD(weight, maxWeight, trunkWeight = null, trunkCapacity = null) 
   const roundedMax = maxWeight !== null ? maxWeight.toFixed(1) : "--";
   const invPercent = (weight && maxWeight) ? ((weight / maxWeight) * 100).toFixed(1) : "--";
 
-  status.textContent = `📦 Inventory: ${roundedWeight} / ${roundedMax} (${invPercent}%)`;
+  status.textContent = `${roundedWeight} / ${roundedMax} kg · ${invPercent}%`;
 
   if (trunk && trunkWeight !== null && trunkCapacity !== null) {
     const roundedTrunkWeight = trunkWeight.toFixed(1);
     const roundedTrunkCap = trunkCapacity.toFixed(1);
     const trunkPercent = ((trunkWeight / trunkCapacity) * 100).toFixed(1);
 
-    trunk.textContent = `🚚 Trunk: ${roundedTrunkWeight} / ${roundedTrunkCap} (${trunkPercent}%)`;
+    trunk.textContent = `${roundedTrunkWeight} / ${roundedTrunkCap} kg · ${trunkPercent}%`;
   }
 
-  fish.textContent = `🐟 Fish Meat: ${guttedCount}`;
+  fish.textContent = guttedCount.toLocaleString();
 }
 
 
@@ -96,16 +96,16 @@ function startFlashing() {
 
   const interval = setInterval(() => {
     if (!flashing) return clearInterval(interval);
-    el.style.borderColor = isRed ? "red" : "#4caf50";
-    el.style.boxShadow = isRed ? "0 0 12px red" : "0 0 12px #4caf50";
+    el.style.borderColor = isRed ? "rgba(251,113,133,.85)" : "";
+    el.style.boxShadow = isRed ? "0 0 0 1px rgba(251,113,133,.18), 0 18px 55px rgba(0,0,0,.42)" : "";
     isRed = !isRed;
   }, 500);
 
   return () => {
     flashing = false;
     el.classList.remove("trunk-full");
-    el.style.borderColor = "#4caf50";
-    el.style.boxShadow = "0 0 12px #4caf50";
+    el.style.borderColor = "";
+    el.style.boxShadow = "";
   };
 }
 
