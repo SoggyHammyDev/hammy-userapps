@@ -31,6 +31,30 @@ const FISH_KEYS = [
 
 window.state = { cache: {} };
 
+const DATA_KEYS = [
+  "job",
+  "weight",
+  "max_weight",
+  "trunkWeight",
+  "trunkCapacity",
+  "inventory",
+  "menu_open",
+  "menu_choices"
+];
+
+function toNumber(value) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
+function requestFishingData() {
+  window.parent.postMessage({ type: "getNamedData", keys: DATA_KEYS }, "*");
+}
+
 function log(msg) {
   if (localStorage.getItem("enableLog") === "false") return;
   const logBox = document.getElementById("log");
@@ -277,7 +301,7 @@ window.addEventListener("message", (event) => {
 
     if (meatDiff > 0) {
       guttedCount += meatDiff;
-      updateHUD(lastWeight, lastMaxWeight);
+      updateHUD(lastWeight, lastMaxWeight, lastTrunkWeight, lastTrunkCap);
     }
 
     lastFishMeat = currentMeat;
