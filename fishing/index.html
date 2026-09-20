@@ -1,190 +1,215 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Fishing Made Easy</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-
-<div class="monitor-box" id="draggableWindow">
-  <div class="monitor-header" id="monitorHeader">
-    🎣 Fishing Made Easy
-    <button id="open-settings" class="settings-btn">⚙️ Settings</button>
-  </div>
-  <div class="monitor-status">
-    <div id="status-inv">📦 Inventory: -- / -- (--%)</div>
-    <div id="status-trunk">🚚 Trunk: -- / -- (--%)</div>
-    <div id="status-fish">🐟 Fish Meat: 0</div>
-    <pre id="log">Waiting for updates...</pre>
-  </div>
-</div>
-
-<div id="settings-panel" class="hidden">
-  <h3>⚙️ Settings</h3>
-
-  <label for="knife-select">Preferred Gut Knife:</label>
-  <select id="knife-select">
-    <option value="">-- Select Knife --</option>
-    <option value="gut_knife">Gut Knife</option>
-    <option value="gut_knife_st">☆ StatTrak™ Gut Knife</option>
-    <option value="gut_knife_fade">☆ StatTrak™ Gut Knife | Autotronic</option>
-    <option value="gut_knife_tiger">☆ StatTrak™ Gut Knife | Tiger Tooth</option>
-    <option value="gut_knife_lore">☆ StatTrak™ Gut Knife | Weightless</option>
-  </select>
-
-  <label><input type="checkbox" id="toggle-logging" /> Enable Log (DEBUG)</label>
-  <label><input type="checkbox" id="toggle-crabmode" /> Enable Crab Pot Mode 🦀</label>
-  <label><input type="checkbox" id="toggle-trunkwarn" /> Enable Trunk Space Warning 🚨</label>
-</div>
-
-<style>
-  #settings-panel input[type="checkbox"] {
-    accent-color: #4caf50;
-  }
-
-  #settings-panel {
-    position: absolute;
-    top: 100px;
-    right: 20px;
-    background: #1e1e1e;
-    color: white;
-    padding: 10px 14px;
-    border-radius: 8px;
-    width: 260px;
-    font-family: sans-serif;
-    z-index: 1000;
-    box-shadow: 0 0 10px #000;
-  }
-
-  #settings-panel.hidden {
-    display: none;
-  }
-
-  #settings-panel h3 {
-    margin-top: 0;
-    font-size: 16px;
-  }
-
-  #settings-panel label {
-    display: block;
-    margin: 8px 0 4px;
-  }
-
-  #knife-select {
-    width: 100%;
-    margin-bottom: 10px;
-    padding: 6px 8px;
-    border: 1px solid #555;
-    background-color: #2b2b2b;
-    color: #fff;
-    border-radius: 4px;
-    font-family: inherit;
-    font-size: 14px;
-    appearance: none;
-    background-image: url('data:image/svg+xml;utf8,<svg fill="white" height="10" viewBox="0 0 20 20" width="10" xmlns="http://www.w3.org/2000/svg"><polygon points="0,0 20,0 10,10"/></svg>');
-    background-repeat: no-repeat;
-    background-position: right 8px center;
-    background-size: 10px;
-    padding-right: 24px;
-  }
-
-  #knife-select:focus {
-    outline: none;
-    border-color: #888;
-  }
-</style>
-
-<script>
-  const settingsPanel = document.getElementById("settings-panel");
-  const knifeSelect = document.getElementById("knife-select");
-  const toggleLogCheckbox = document.getElementById("toggle-logging");
-  const toggleCrabCheckbox = document.getElementById("toggle-crabmode");
-  const toggleTrunkWarnCheckbox = document.getElementById("toggle-trunkwarn");
-
-  document.getElementById("open-settings").onclick = () => {
-    settingsPanel.classList.toggle("hidden");
-  };
-
-  knifeSelect.value = localStorage.getItem("gutKnife") || "";
-  toggleLogCheckbox.checked = localStorage.getItem("enableLog") !== "false";
-  toggleCrabCheckbox.checked = localStorage.getItem("crabMode") === "true";
-  toggleTrunkWarnCheckbox.checked = localStorage.getItem("enableTrunkWarn") !== "false";
-
-  knifeSelect.addEventListener("change", () => {
-    localStorage.setItem("gutKnife", knifeSelect.value);
-  });
-  toggleLogCheckbox.addEventListener("change", () => {
-    localStorage.setItem("enableLog", toggleLogCheckbox.checked);
-    updateLogVisibility();
-  });
-  toggleCrabCheckbox.addEventListener("change", () => {
-    localStorage.setItem("crabMode", toggleCrabCheckbox.checked);
-  });
-  toggleTrunkWarnCheckbox.addEventListener("change", () => {
-    localStorage.setItem("enableTrunkWarn", toggleTrunkWarnCheckbox.checked);
-  });
-</script>
-
-<script type="module" src="monitor.js"></script>
-
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const dragEl = document.getElementById("draggableWindow");
-    const headerEl = document.getElementById("monitorHeader");
-    let isDragging = false, offsetX = 0, offsetY = 0;
-
-    const savedX = localStorage.getItem("uiPosX");
-    const savedY = localStorage.getItem("uiPosY");
-    if (savedX && savedY) {
-      dragEl.style.left = savedX + "px";
-      dragEl.style.top = savedY + "px";
-    }
-
-    headerEl.addEventListener("mousedown", (e) => {
-      isDragging = true;
-      offsetX = e.clientX - dragEl.offsetLeft;
-      offsetY = e.clientY - dragEl.offsetTop;
-    });
-
-    document.addEventListener("mouseup", () => {
-      if (isDragging) {
-        localStorage.setItem("uiPosX", dragEl.offsetLeft);
-        localStorage.setItem("uiPosY", dragEl.offsetTop);
-      }
-      isDragging = false;
-    });
-
-    document.addEventListener("mousemove", (e) => {
-      if (!isDragging) return;
-      dragEl.style.left = `${e.clientX - offsetX}px`;
-      dragEl.style.top = `${e.clientY - offsetY}px`;
-    });
-  });
-</script>
-
-<script>
-  window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      const panel = document.getElementById("settings-panel");
-      if (!panel.classList.contains("hidden")) {
-        panel.classList.add("hidden");
-      } else {
-        window.parent.postMessage({ type: "pin" }, "*");
-      }
-    }
-  });
-
-  function updateLogVisibility() {
-    const logBox = document.getElementById("log");
-    const enabled = localStorage.getItem("enableLog") === "true";
-    logBox.style.display = enabled ? "block" : "none";
-  }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    updateLogVisibility();
-  });
-</script>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+  <meta name="robots" content="noindex">
+  <title>Hammy Fishing Helper</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <section class="monitor-box" id="draggableWindow">
+    <header class="monitor-header" id="monitorHeader">
+      <div class="header-left">
+        <span class="app-icon">🎣</span>
+        <div class="title-copy">
+          <div class="title-row">
+            <span>Fishing Helper</span>
+            <span class="version-badge">v2</span>
+          </div>
+          <span class="subtitle">Live fishing automation</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="open-settings" class="header-btn" title="Settings" aria-label="Settings">⚙</button>
+      </div>
+    </header>
+
+    <div class="monitor-status">
+      <div class="status-grid">
+        <article class="status-card">
+          <div class="status-head">
+            <span class="status-icon">🎒</span>
+            <span>Inventory</span>
+          </div>
+          <div id="status-inv" class="status-value">-- / -- (--%)</div>
+        </article>
+
+        <article class="status-card">
+          <div class="status-head">
+            <span class="status-icon">🚚</span>
+            <span>Trunk</span>
+          </div>
+          <div id="status-trunk" class="status-value">-- / -- (--%)</div>
+        </article>
+
+        <article class="status-card fish-card">
+          <div class="status-head">
+            <span class="status-icon">🐟</span>
+            <span>Fish Meat</span>
+          </div>
+          <div id="status-fish" class="status-value">0</div>
+        </article>
+      </div>
+
+      <div class="log-wrap">
+        <div class="section-title">
+          <span>Activity</span>
+          <span class="live-pill"><i></i> LIVE</span>
+        </div>
+        <pre id="log">Waiting for updates...</pre>
+      </div>
+    </div>
+  </section>
+
+  <aside id="settings-panel" class="hidden">
+    <div class="settings-header">
+      <div>
+        <strong>Fishing Settings</strong>
+        <span>Automation preferences</span>
+      </div>
+      <button id="close-settings" class="header-btn" title="Close" aria-label="Close">×</button>
+    </div>
+
+    <label class="field-label" for="knife-select">Preferred Gut Knife</label>
+    <select id="knife-select">
+      <option value="">-- Select Knife --</option>
+      <option value="gut_knife">Gut Knife</option>
+      <option value="gut_knife_st">☆ StatTrak™ Gut Knife</option>
+      <option value="gut_knife_fade">☆ StatTrak™ Gut Knife | Autotronic</option>
+      <option value="gut_knife_tiger">☆ StatTrak™ Gut Knife | Tiger Tooth</option>
+      <option value="gut_knife_lore">☆ StatTrak™ Gut Knife | Weightless</option>
+    </select>
+
+    <div class="settings-group">
+      <label class="toggle-row">
+        <span>
+          <strong>Debug Log</strong>
+          <small>Show activity details in the HUD</small>
+        </span>
+        <input type="checkbox" id="toggle-logging">
+      </label>
+
+      <label class="toggle-row">
+        <span>
+          <strong>Crab Pot Mode</strong>
+          <small>Wait for pot crabs before trunk dumping</small>
+        </span>
+        <input type="checkbox" id="toggle-crabmode">
+      </label>
+
+      <label class="toggle-row">
+        <span>
+          <strong>Trunk Warning</strong>
+          <small>Flash the HUD when trunk space is insufficient</small>
+        </span>
+        <input type="checkbox" id="toggle-trunkwarn">
+      </label>
+    </div>
+  </aside>
+
+  <script>
+    const settingsPanel = document.getElementById("settings-panel");
+    const knifeSelect = document.getElementById("knife-select");
+    const toggleLogCheckbox = document.getElementById("toggle-logging");
+    const toggleCrabCheckbox = document.getElementById("toggle-crabmode");
+    const toggleTrunkWarnCheckbox = document.getElementById("toggle-trunkwarn");
+
+    document.getElementById("open-settings").onclick = (e) => {
+      e.stopPropagation();
+      settingsPanel.classList.toggle("hidden");
+    };
+
+    document.getElementById("close-settings").onclick = () => {
+      settingsPanel.classList.add("hidden");
+    };
+
+    knifeSelect.value = localStorage.getItem("gutKnife") || "";
+    toggleLogCheckbox.checked = localStorage.getItem("enableLog") !== "false";
+    toggleCrabCheckbox.checked = localStorage.getItem("crabMode") === "true";
+    toggleTrunkWarnCheckbox.checked = localStorage.getItem("enableTrunkWarn") !== "false";
+
+    knifeSelect.addEventListener("change", () => {
+      localStorage.setItem("gutKnife", knifeSelect.value);
+    });
+    toggleLogCheckbox.addEventListener("change", () => {
+      localStorage.setItem("enableLog", toggleLogCheckbox.checked);
+      updateLogVisibility();
+    });
+    toggleCrabCheckbox.addEventListener("change", () => {
+      localStorage.setItem("crabMode", toggleCrabCheckbox.checked);
+    });
+    toggleTrunkWarnCheckbox.addEventListener("change", () => {
+      localStorage.setItem("enableTrunkWarn", toggleTrunkWarnCheckbox.checked);
+    });
+  </script>
+
+  <script type="module" src="monitor.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const dragEl = document.getElementById("draggableWindow");
+      const headerEl = document.getElementById("monitorHeader");
+      let isDragging = false, offsetX = 0, offsetY = 0;
+
+      const savedX = localStorage.getItem("uiPosX");
+      const savedY = localStorage.getItem("uiPosY");
+      if (savedX !== null && savedY !== null) {
+        dragEl.style.left = savedX + "px";
+        dragEl.style.top = savedY + "px";
+      }
+
+      headerEl.addEventListener("mousedown", (e) => {
+        if (e.target.closest("button")) return;
+        isDragging = true;
+        offsetX = e.clientX - dragEl.offsetLeft;
+        offsetY = e.clientY - dragEl.offsetTop;
+        headerEl.classList.add("dragging");
+        e.preventDefault();
+      });
+
+      document.addEventListener("mouseup", () => {
+        if (isDragging) {
+          localStorage.setItem("uiPosX", dragEl.offsetLeft);
+          localStorage.setItem("uiPosY", dragEl.offsetTop);
+        }
+        isDragging = false;
+        headerEl.classList.remove("dragging");
+      });
+
+      document.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+
+        const maxX = Math.max(0, window.innerWidth - dragEl.offsetWidth);
+        const maxY = Math.max(0, window.innerHeight - dragEl.offsetHeight);
+        const x = Math.max(0, Math.min(maxX, e.clientX - offsetX));
+        const y = Math.max(0, Math.min(maxY, e.clientY - offsetY));
+
+        dragEl.style.left = x + "px";
+        dragEl.style.top = y + "px";
+      });
+
+      updateLogVisibility();
+    });
+
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        if (!settingsPanel.classList.contains("hidden")) {
+          settingsPanel.classList.add("hidden");
+        } else {
+          window.parent.postMessage({ type: "pin" }, "*");
+        }
+      }
+    });
+
+    function updateLogVisibility() {
+      const logBox = document.getElementById("log");
+      const wrap = document.querySelector(".log-wrap");
+      const enabled = localStorage.getItem("enableLog") !== "false";
+      logBox.style.display = enabled ? "block" : "none";
+      if (wrap) wrap.style.display = enabled ? "block" : "none";
+    }
+  </script>
+</body>
+</html>
