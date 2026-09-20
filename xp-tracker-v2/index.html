@@ -1,85 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
-  <title>XP Tracker</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+  <meta name="robots" content="noindex">
+  <title>Hammy XP Tracker v2</title>
+  <link rel="shortcut icon" href="https://tidalfaction.com/tidal.png">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="tracker-app" class="hud-panel" style="position:absolute; left:40px; top:40px;">
-
-    <header id="drag-handle" class="panel-header">
-      <div class="title">XP Tracker</div>
-      <div class="actions">
-        <button id="settings-icon" class="btn btn-outline-light btn-xxs" title="Settings">⚙️</button>
-        <button id="minimize-btn" class="btn btn-outline-light btn-xxs" title="Minimize">—</button>
+  <section id="tracker-app" class="tracker" style="left:40px;top:40px;">
+    <header id="drag-handle" class="header">
+      <div class="header-left">
+        <span class="logo">⚡</span>
+        <div>
+          <div class="title">XP Tracker <span class="version">v2.1</span></div>
+          <div id="connection-status" class="status">Waiting for Transport Tycoon…</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="refresh-btn" class="icon-btn" title="Refresh data">↻</button>
+        <button id="jobs-btn" class="icon-btn" title="Choose skills">☰</button>
+        <button id="settings-btn" class="icon-btn" title="Settings">⚙</button>
+        <button id="minimize-btn" class="icon-btn" title="Minimize">−</button>
       </div>
     </header>
 
-    <div class="toolbar">
-      <button id="toggle-job-list" class="btn btn-secondary btn-xxs">
-        Select jobs
-      </button>
-    </div>
-
-    <div id="job-list" class="job-ribbon" style="display:none;"></div>
-
-    <div class="table-wrap">
-      <table id="summary-table" class="table table-dark table-sm align-middle mb-0">
-        <thead id="summary-thead" class="table-head"></thead>
-        <tbody id="summary-tbody"></tbody>
-      </table>
-    </div>
-
-    <aside id="settings-panel" class="settings-card" style="display:none;">
-      <label class="form-check">
-        <input class="form-check-input" type="checkbox" id="toggle-bxp" checked>
-        <span class="form-check-label">Show BXP</span>
-      </label>
-      <label class="form-check">
-        <input class="form-check-input" type="checkbox" id="toggle-current-level" checked>
-        <span class="form-check-label">Show Current Level</span>
-      </label>
-      <label class="form-check">
-        <input class="form-check-input" type="checkbox" id="toggle-exp-hr" checked>
-        <span class="form-check-label">Show EXP/hr</span>
-      </label>
-      <label class="form-check">
-        <input class="form-check-input" type="checkbox" id="toggle-exp-min" checked>
-        <span class="form-check-label">Show EXP/min</span>
-      </label>
-      <label class="form-check">
-        <input class="form-check-input" type="checkbox" id="toggle-1m-percent" checked>
-        <span class="form-check-label">Show 1M %</span>
-      </label>
-      <label class="form-check">
-        <input class="form-check-input" type="checkbox" id="toggle-10m-percent">
-        <span class="form-check-label">Show 10M %</span>
-      </label>
-      <label class="form-check">
-        <input class="form-check-input" type="checkbox" id="toggle-perk-chance" checked>
-        <span class="form-check-label">Show Perk Chance</span>
-      </label>
-      <label class="form-check">
-        <input class="form-check-input" type="checkbox" id="toggle-level" checked>
-        <span class="form-check-label">Show Level</span>
-      </label>
-
-      <div class="mt-2 small">Font size</div>
-      <div class="d-flex align-items-center gap-2">
-        <input type="range" id="xp-font-size" min="11" max="16" value="12" step="1" class="form-range form-range-compact">
-        <span id="xp-font-size-value" class="small">12px</span>
+    <div id="body" class="body">
+      <div class="session-strip">
+        <div class="mini-stat"><span>Session</span><strong id="session-time">00:00:00</strong></div>
+        <div class="mini-stat"><span>Total gain</span><strong id="session-total-gain">0 XP</strong></div>
+        <div class="mini-stat"><span>Active</span><strong id="active-skill">—</strong></div>
       </div>
 
-      <button id="reset-exp-log" class="btn btn-outline-light btn-xxs w-100 mt-2">Reset EXP Tracking</button>
+      <div id="job-picker" class="job-picker hidden">
+        <div class="picker-head">
+          <strong>Skills shown</strong>
+          <div>
+            <button id="select-all" class="text-btn">All</button>
+            <button id="select-none" class="text-btn">None</button>
+          </div>
+        </div>
+        <div id="job-list" class="job-list"></div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead id="summary-head"></thead>
+          <tbody id="summary-body">
+            <tr><td class="empty">Waiting for XP data…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <aside id="settings-panel" class="settings hidden">
+      <div class="settings-title">Display</div>
+      <label><input id="show-level" type="checkbox" checked> Level</label>
+      <label><input id="show-bxp" type="checkbox" checked> BXP</label>
+      <label><input id="show-gain" type="checkbox" checked> Session gain</label>
+      <label><input id="show-rate" type="checkbox" checked> XP/hour</label>
+      <label><input id="show-eta" type="checkbox" checked> ETA to next level</label>
+      <label><input id="show-progress" type="checkbox" checked> Level progress</label>
+      <label><input id="highlight-active" type="checkbox" checked> Highlight active skill</label>
+
+      <div class="divider"></div>
+      <label class="range-label">Font size <span id="font-size-value">11px</span></label>
+      <input id="font-size" type="range" min="9" max="15" value="11">
+
+      <div class="divider"></div>
+      <button id="reset-session" class="danger-btn">Reset session baseline</button>
     </aside>
 
-    <div id="resize-handle"></div>
-  </div>
+    <div id="resize-handle" title="Resize"></div>
+  </section>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
