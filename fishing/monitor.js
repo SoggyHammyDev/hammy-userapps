@@ -13,6 +13,8 @@ let guttedCount = 0;
 let lastRawFishTotal = 0;
 let lastPotCrabCount = 0;
 let hasWarnedKnife = false;
+let lastTrunkFullState = null;
+let lastDumpSkipState = null;
 
 const KNIFE_COMMANDS = {
   "gut_knife_auto": "item gut_knife_auto gut",
@@ -175,18 +177,33 @@ async function monitorInventory() {
         stopFlash();
         stopFlash = null;
       }
-      log("❌ Cannot dump: Trunk is full!");
-    } else if (stopFlash) {
-      stopFlash();
-      stopFlash = null;
+
+      if (lastTrunkFullState !== true) {
+        log("❌ Cannot dump: Not enough trunk space for current inventory.");
+      }
+    } else {
+      if (stopFlash) {
+        stopFlash();
+        stopFlash = null;
+      }
+
+      if (lastTrunkFullState === true) {
+        log("✅ Trunk has enough space again.");
+      }
     }
+
+    lastTrunkFullState = trunkFull;
 
     if ((weight / maxWeight) >= 0.85) {
       if (trunkFull) {
-        log("🚫 Skipping Put All due to full trunk.");
+        if (lastDumpSkipState !== true) {
+          log("🚫 Skipping Put All until enough trunk space is available.");
+        }
+        lastDumpSkipState = true;
         } else if (crabMode && (lastInventoryObj?.["fish_potcrab"]?.amount ?? 0) > 0) {
           log(`🦀 Crab mode: Still have ${lastInventoryObj["fish_potcrab"].amount} crab(s). Waiting...`);
         } else {
+        lastDumpSkipState = false;
         log("⚠️ Inventory over 85%. Dumping to trunk...");
         window.parent.postMessage({ type: "sendCommand", command: "rm_trunk" }, "*");
         window.parent.postMessage({ type: "getData" }, "*");
@@ -238,6 +255,8 @@ async function monitorInventory() {
 
         await sleep(5000);
       }
+    } else {
+      lastDumpSkipState = false;
     }
 
     await sleep(2000);
