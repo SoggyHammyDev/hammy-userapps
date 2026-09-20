@@ -36,7 +36,44 @@ const STORE = {
 };
 
 const DEFAULT_SETTINGS = {
-  level:true,bxp:true,gain:true,rate:true,eta:true,progress:true,highlightActive:true,fontSize:11
+  level:true,bxp:true,gain:true,rate:true,eta:true,progress:true,highlightActive:true,autoSelectJob:true,fontSize:11
+};
+
+const JOB_SKILL_MAP = {
+  "trucker":["trucker"],
+  "mechanic":["mechanic"],
+  "garbage collector":["garbage"],
+  "garbage":["garbage"],
+  "postop employee":["postop"],
+  "postop":["postop"],
+  "airline pilot":["pilot"],
+  "pilot":["pilot"],
+  "cargo pilot":["cargopilot"],
+  "helicopter pilot":["helicopterpilot"],
+  "bus driver":["busdriver"],
+  "train conductor":["conductor"],
+  "ems / paramedic":["emergency"],
+  "ems":["emergency"],
+  "paramedic":["emergency"],
+  "firefighter":["firefighter"],
+  "fire fighter":["firefighter"],
+  "street racer":["racer"],
+  "racer":["racer"],
+  "farmer":["farmer"],
+  "fisher":["fisher"],
+  "miner":["miner"],
+  "quarry worker":["miner"],
+  "wildlife hunter":["hunter"],
+  "hunter":["hunter"],
+
+  // Specialized jobs confirmed from saved Tycoon wiki pages.
+  "aerial firefighter":["firefighter","pilot"],
+  "r.t.s. transporter":["racer","business"],
+  "rts transporter":["racer","business"],
+  "r.t.s. aviator":["business","pilot","racer"],
+  "rts aviator":["business","pilot","racer"],
+  "r.t.s. professional":["business","pilot","racer"],
+  "rts professional":["business","pilot","racer"]
 };
 
 const state = {
@@ -52,7 +89,8 @@ const state = {
   jobTitle:"",
   sessionStartedAt:Date.now(),
   received:false,
-  minimized:false
+  minimized:false,
+  lastAutoJob:""
 };
 
 const $ = id => document.getElementById(id);
@@ -108,6 +146,7 @@ function applySettingsToInputs(){
   $("show-eta").checked = state.settings.eta;
   $("show-progress").checked = state.settings.progress;
   $("highlight-active").checked = state.settings.highlightActive;
+  $("auto-select-job").checked = state.settings.autoSelectJob;
   $("font-size").value = state.settings.fontSize;
   $("font-size-value").textContent = state.settings.fontSize + "px";
   document.documentElement.style.setProperty("--font-size", state.settings.fontSize + "px");
@@ -122,6 +161,7 @@ function saveSettings(){
     eta:$("show-eta").checked,
     progress:$("show-progress").checked,
     highlightActive:$("highlight-active").checked,
+    autoSelectJob:$("auto-select-job").checked,
     fontSize:Number($("font-size").value)||11
   };
   localStorage.setItem(STORE.settings, JSON.stringify(state.settings));
@@ -179,6 +219,49 @@ function sessionGain(jobKey){
   return Math.max(0,current-start);
 }
 
+function normalizeJobName(value){
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g," ");
+}
+
+function currentJobNames(){
+  return [state.jobName,state.jobTitle,state.job]
+    .map(normalizeJobName)
+    .filter(Boolean);
+}
+
+function mappedSkillsForCurrentJob(){
+  for (const name of currentJobNames()) {
+    if (JOB_SKILL_MAP[name]) return [...JOB_SKILL_MAP[name]];
+    const direct = JOBS.find(job => job.jobs.some(alias => normalizeJobName(alias) === name));
+    if (direct) return [direct.key];
+  }
+  return [];
+}
+
+function saveSelected(){
+  state.selected = [...new Set(state.selected)].filter(key => JOBS.some(job => job.key === key));
+  localStorage.setItem(STORE.selected,JSON.stringify(state.selected));
+}
+
+function autoSelectForCurrentJob(force=false){
+  if (!state.settings.autoSelectJob) return false;
+  const names = currentJobNames();
+  const signature = names.join("|");
+  if (!signature || (!force && signature === state.lastAutoJob)) return false;
+
+  const mapped = mappedSkillsForCurrentJob();
+  state.lastAutoJob = signature;
+  if (!mapped.length) return false;
+
+  state.selected = mapped;
+  saveSelected();
+  renderPicker();
+  return true;
+}
+
 function activeSkillKey(){
   const now = Date.now();
   let freshest = null;
@@ -208,9 +291,12 @@ function processGameData(data){
   if (!data || typeof data !== "object") return;
   const now = Date.now();
   state.received = true;
+  const oldJobSignature = currentJobNames().join("|");
   if (typeof data.job === "string") state.job = data.job;
   if (typeof data.job_name === "string") state.jobName = data.job_name;
   if (typeof data.job_title === "string") state.jobTitle = data.job_title;
+  const newJobSignature = currentJobNames().join("|");
+  const jobChanged = oldJobSignature !== newJobSignature;
 
   let inventory = data.inventory;
   if (typeof inventory === "string") inventory = safeJson(inventory,{});
@@ -226,6 +312,11 @@ function processGameData(data){
         state.logs[job.key] = [{time:now,exp:value}];
       } else if (Number.isFinite(previous) && value > previous) {
         const log = state.logs[job.key] || (state.logs[job.key] = []);
+        if (state.settings.autoSelectJob && !mappedSkillsForCurrentJob().length) {
+          state.selected = [job.key];
+          saveSelected();
+          renderPicker();
+        }
         if (!log.length) log.push({time:now-1,exp:previous});
         log.push({time:now,exp:value});
         state.lastGainAt[job.key] = now;
@@ -240,6 +331,7 @@ function processGameData(data){
     if (Number.isFinite(bxp)) state.bxp[job.key] = bxp;
   }
 
+  if (jobChanged) autoSelectForCurrentJob(true);
   saveSession();
   render();
 }
@@ -356,7 +448,10 @@ function setupUi(){
   });
   $("select-all").addEventListener("click",()=>{state.selected=JOBS.map(j=>j.key);localStorage.setItem(STORE.selected,JSON.stringify(state.selected));renderPicker();render()});
   $("select-none").addEventListener("click",()=>{state.selected=[];localStorage.setItem(STORE.selected,"[]");renderPicker();render()});
-  ["show-level","show-bxp","show-gain","show-rate","show-eta","show-progress","highlight-active"].forEach(id=>$(id).addEventListener("change",saveSettings));
+  ["show-level","show-bxp","show-gain","show-rate","show-eta","show-progress","highlight-active","auto-select-job"].forEach(id=>$(id).addEventListener("change",()=>{
+    saveSettings();
+    if (id === "auto-select-job" && $("auto-select-job").checked) autoSelectForCurrentJob(true);
+  }));
   $("font-size").addEventListener("input",saveSettings);
   $("reset-session").addEventListener("click",resetSession);
   document.addEventListener("click",e=>{
