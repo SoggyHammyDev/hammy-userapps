@@ -101,13 +101,13 @@ function toggleLayout(save = true) {
   if (isHorizontal) {
     container.classList.add("horizontal");
     if (layoutBtn) {
-      layoutBtn.innerHTML = '<i class="fas fa-arrows-alt-v"></i>';
+      layoutBtn.textContent = "↕";
       layoutBtn.title = "Switch to Vertical";
     }
   } else {
     container.classList.remove("horizontal");
     if (layoutBtn) {
-      layoutBtn.innerHTML = '<i class="fas fa-arrows-alt-h"></i>';
+      layoutBtn.textContent = "↔";
       layoutBtn.title = "Switch to Horizontal";
     }
   }
