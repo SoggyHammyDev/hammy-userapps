@@ -40,7 +40,9 @@ const DEFAULT_SETTINGS = {
 };
 
 const JOB_SKILL_MAP = {
-  "trucker":["trucker"],
+  // Core jobs
+  "trucker":["trucker","strength"],
+  "trucking":["trucker","strength"],
   "mechanic":["mechanic"],
   "garbage collector":["garbage"],
   "garbage":["garbage"],
@@ -48,9 +50,11 @@ const JOB_SKILL_MAP = {
   "postop":["postop"],
   "airline pilot":["pilot"],
   "pilot":["pilot"],
-  "cargo pilot":["cargopilot"],
+  "cargo pilot":["cargopilot","player","strength"],
   "helicopter pilot":["helicopterpilot"],
+  "heli pilot":["helicopterpilot"],
   "bus driver":["busdriver"],
+  "bus":["busdriver"],
   "train conductor":["conductor"],
   "ems / paramedic":["emergency"],
   "ems":["emergency"],
@@ -60,21 +64,35 @@ const JOB_SKILL_MAP = {
   "street racer":["racer"],
   "racer":["racer"],
   "farmer":["farmer"],
+  "farming":["farmer"],
   "fisher":["fisher"],
-  "miner":["miner"],
-  "quarry worker":["miner"],
+  "miner":["miner","strength"],
   "wildlife hunter":["hunter"],
   "hunter":["hunter"],
+  "businesses":["business"],
+  "business":["business"],
 
-  // Specialized jobs confirmed from saved Tycoon wiki pages.
+  // Specialized / side jobs confirmed by saved Tycoon wiki pages.
   "aerial firefighter":["firefighter","pilot"],
+  "beach cleaner":["garbage"],
+  "collinsco cabbies":["business"],
+  "courier":["trucker","player","strength"],
+  "iaa delivery":["player","strength"],
+  "land surveyor":["strength"],
+  "pizza delivery":["player","strength"],
+  "prospecting":["miner","strength"],
+  "quarry worker":["miner","trucker"],
+  "server repair":["mechanic","player","strength"],
+  "transformer repair":["mechanic","player","strength"],
+
+  // RTS mappings confirmed by the saved RTS wiki page.
   "r.t.s. transporter":["racer","business"],
   "rts transporter":["racer","business"],
   "r.t.s. aviator":["business","pilot","racer"],
   "rts aviator":["business","pilot","racer"],
   "r.t.s. professional":["business","pilot","racer"],
   "rts professional":["business","pilot","racer"]
-};
+}
 
 const state = {
   selected:["player","trucker","mechanic","miner","fisher"],
