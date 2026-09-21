@@ -202,7 +202,6 @@ async function startOpening() {
   running = false;
   document.getElementById("start-btn").style.display = "block";
   document.getElementById("stop-btn").style.display = "none";
-  const runState = document.getElementById("run-state");
   if (runState) {
     runState.className = "state-pill idle";
     runState.innerHTML = "<i></i> IDLE";
