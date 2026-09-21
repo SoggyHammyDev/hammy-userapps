@@ -1,23 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>BXP Multi-Job Tracker</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+  <meta name="robots" content="noindex">
+  <title>Hammy BXP Tracker</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="tracker-app" class="new-ui" style="position:absolute; left:40px; top:40px;">
+  <section id="tracker-app" class="new-ui" style="position:absolute;left:40px;top:40px;">
     <header id="drag-handle">
-      <div class="drag-title">BXP Tracker</div>
-      <div id="settings-icon" title="Settings">⚙️</div>
+      <div class="header-left">
+        <span class="app-icon">✦</span>
+        <div class="header-copy">
+          <div class="title-row">
+            <span>BXP Tracker</span>
+            <span class="version-badge">v2</span>
+          </div>
+          <span class="subtitle"><span id="selected-job-count">0</span> jobs tracked</span>
+        </div>
+      </div>
+      <button id="settings-icon" class="icon-btn" title="Settings" aria-label="Settings">⚙</button>
     </header>
+
     <main>
       <section id="job-select-section">
-        <label>
-          <button id="toggle-job-list">▶</button> Select jobs:
-        </label>
-        <div id="job-list" style="display: none;"></div>
+        <button id="toggle-job-list" class="section-toggle" type="button">
+          <span>Tracked Jobs</span>
+          <span id="job-list-arrow">›</span>
+        </button>
+        <div id="job-list" style="display:none;"></div>
       </section>
+
       <section id="bxp-summary-section">
         <table id="bxp-summary-table">
           <thead>
@@ -25,22 +40,58 @@
           </thead>
           <tbody id="summary-tbody"></tbody>
         </table>
+        <div id="empty-state">Select one or more jobs to begin tracking.</div>
       </section>
     </main>
-    <div id="resize-handle" title="Resize"></div>
-  </div>
 
-  <!-- Moved OUTSIDE tracker-app -->
+    <div id="resize-handle" title="Resize"></div>
+  </section>
+
   <aside id="settings-panel" style="display:none;">
-    <label><input type="checkbox" id="toggle-bxp-hr" checked> Show BXP/hr</label><br>
-    <label><input type="checkbox" id="toggle-bxp-min" checked> Show BXP/min</label><br>
-    <label for="bxp-font-size">Info Font Size</label>
-    <input type="range" id="bxp-font-size" min="12" max="36" value="13" step="1" />
-    <span id="bxp-font-size-value">13</span>px
-    <br>
-    <button id="reloadButton">🔄 Reload UI</button>
-    <button id="reset-bxp-log">Reset BXP Tracking</button>
+    <div class="settings-header">
+      <div>
+        <strong>Tracker Settings</strong>
+        <span>Display & session controls</span>
+      </div>
+      <button id="close-settings" class="icon-btn" type="button" aria-label="Close settings">×</button>
+    </div>
+
+    <label class="setting-row">
+      <span>
+        <strong>Show BXP/hr</strong>
+        <small>Display estimated hourly rate.</small>
+      </span>
+      <span class="switch">
+        <input type="checkbox" id="toggle-bxp-hr" checked>
+        <span class="switch-track"></span>
+      </span>
+    </label>
+
+    <label class="setting-row">
+      <span>
+        <strong>Show BXP/min</strong>
+        <small>Display estimated per-minute rate.</small>
+      </span>
+      <span class="switch">
+        <input type="checkbox" id="toggle-bxp-min" checked>
+        <span class="switch-track"></span>
+      </span>
+    </label>
+
+    <div class="range-card">
+      <div class="range-head">
+        <label for="bxp-font-size">Row Size</label>
+        <span><b id="bxp-font-size-value">13</b>px</span>
+      </div>
+      <input type="range" id="bxp-font-size" min="12" max="36" value="13" step="1">
+    </div>
+
+    <div class="settings-actions">
+      <button id="reloadButton" class="settings-btn">Reload UI</button>
+      <button id="reset-bxp-log" class="settings-btn danger">Reset Tracking</button>
+    </div>
   </aside>
-  <script src="script.js"></script>
+
+  <script src="script.js?v=20260920"></script>
 </body>
 </html>
