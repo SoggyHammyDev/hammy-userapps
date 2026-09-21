@@ -337,6 +337,94 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+
+  function setupFloatingPanel() {
+    const app = $("app");
+    const handle = $("diag-drag-handle");
+    const resize = $("diag-resize-handle");
+    const POS_KEY = "hammy_diag_pos_v1";
+    const SIZE_KEY = "hammy_diag_size_v1";
+
+    try {
+      const savedPos = JSON.parse(localStorage.getItem(POS_KEY) || "null");
+      if (savedPos) {
+        const maxX = Math.max(0, window.innerWidth - app.offsetWidth);
+        const maxY = Math.max(0, window.innerHeight - app.offsetHeight);
+        app.style.left = Math.max(0, Math.min(Number(savedPos.left) || 0, maxX)) + "px";
+        app.style.top = Math.max(0, Math.min(Number(savedPos.top) || 0, maxY)) + "px";
+      }
+    } catch (_) {}
+
+    try {
+      const savedSize = JSON.parse(localStorage.getItem(SIZE_KEY) || "null");
+      if (savedSize) {
+        app.style.width = Math.max(620, Math.min(Number(savedSize.width) || 900, window.innerWidth - 20)) + "px";
+        app.style.height = Math.max(420, Math.min(Number(savedSize.height) || 680, window.innerHeight - 20)) + "px";
+      }
+    } catch (_) {}
+
+    let dragging = false;
+    let dx = 0, dy = 0;
+
+    handle.addEventListener("mousedown", (e) => {
+      if (e.target.closest("button") || e.target.closest("input") || e.target.closest("select") || e.target.closest("label")) return;
+      const rect = app.getBoundingClientRect();
+      dragging = true;
+      dx = e.clientX - rect.left;
+      dy = e.clientY - rect.top;
+      e.preventDefault();
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (!dragging) return;
+      const maxX = Math.max(0, window.innerWidth - app.offsetWidth);
+      const maxY = Math.max(0, window.innerHeight - app.offsetHeight);
+      app.style.left = Math.max(0, Math.min(e.clientX - dx, maxX)) + "px";
+      app.style.top = Math.max(0, Math.min(e.clientY - dy, maxY)) + "px";
+    });
+
+    document.addEventListener("mouseup", () => {
+      if (!dragging) return;
+      dragging = false;
+      localStorage.setItem(POS_KEY, JSON.stringify({
+        left: parseInt(app.style.left, 10) || app.offsetLeft,
+        top: parseInt(app.style.top, 10) || app.offsetTop
+      }));
+    });
+
+    let resizing = false;
+    let startX = 0, startY = 0, startW = 0, startH = 0;
+
+    resize.addEventListener("mousedown", (e) => {
+      resizing = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = app.getBoundingClientRect();
+      startW = rect.width;
+      startH = rect.height;
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (!resizing) return;
+      const maxW = Math.max(620, window.innerWidth - app.offsetLeft - 10);
+      const maxH = Math.max(420, window.innerHeight - app.offsetTop - 10);
+      app.style.width = Math.max(620, Math.min(startW + (e.clientX - startX), maxW)) + "px";
+      app.style.height = Math.max(420, Math.min(startH + (e.clientY - startY), maxH)) + "px";
+    });
+
+    document.addEventListener("mouseup", () => {
+      if (!resizing) return;
+      resizing = false;
+      localStorage.setItem(SIZE_KEY, JSON.stringify({
+        width: app.offsetWidth,
+        height: app.offsetHeight
+      }));
+    });
+  }
+
+
   function setupUi() {
     document.querySelectorAll(".tab").forEach(tab => {
       tab.addEventListener("click", () => {
@@ -437,6 +525,7 @@
   const isNui = window.parent !== window || navigator.userAgent.includes("CitizenFX");
   if (isNui) document.body.classList.add("no-blur");
 
+  setupFloatingPanel();
   setupUi();
   renderAll();
   send({ type: "getData" });
