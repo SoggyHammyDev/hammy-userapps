@@ -261,40 +261,38 @@ async function startOpening() {
       const beforePack = inventory[packId] || 0;
       if (beforePack <= 0) continue;
 
-      // First try the pack directly through the same Inventory -> Pack -> Use
-      // flow that Transport Tycoon exposes manually.
+      // Open the pack through the same Inventory -> Pack -> Use flow
+      // Transport Tycoon exposes manually.
       await useItem(packId);
       requestInventory();
       await sleep(500);
 
-      if ((inventory[packId] || 0) < beforePack) {
+      const afterPack = inventory[packId] || 0;
+      if (afterPack < beforePack) {
         found = true;
-        break;
-      }
 
-      // If TT rejected the opening because this account needs a reset,
-      // consume one Cursed Dice, then retry the pack once.
-      if ((inventory["prefix_pack_1_reset"] || 0) > 0) {
-        console.log(`Pack ${packId} did not open; using one Cursed Dice and retrying.`);
-        await useItem("prefix_pack_1_reset");
-        await sleep(700);
-        requestInventory();
-        await sleep(500);
+        // After every successful pack opening, consume one Cursed Dice
+        // so the account is reset and ready for the next blessing pack.
+        if ((inventory["prefix_pack_1_reset"] || 0) > 0) {
+          const beforeDice = inventory["prefix_pack_1_reset"] || 0;
+          await useItem("prefix_pack_1_reset");
+          requestInventory();
+          await sleep(500);
 
-        const retryBefore = inventory[packId] || 0;
-        await useItem(packId);
-        requestInventory();
-        await sleep(500);
-
-        if ((inventory[packId] || 0) < retryBefore) {
-          found = true;
-          break;
+          if ((inventory["prefix_pack_1_reset"] || 0) >= beforeDice) {
+            console.warn("Cursed Dice did not appear to decrement after pack use.");
+          }
+        } else {
+          console.log("Pack opened, but no Cursed Dice remain. Stopping after this pack.");
+          running = false;
         }
-      } else {
-        console.log("No cursed dice left and pack could not be opened. Stopping.");
-        running = false;
+
         break;
       }
+
+      console.warn(`Pack ${packId} did not open; stopping to avoid consuming a Cursed Dice unnecessarily.`);
+      running = false;
+      break;
     }
 
     if (!found) break;
