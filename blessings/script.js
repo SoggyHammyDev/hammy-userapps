@@ -19,8 +19,10 @@ function updateUI() {
     // Add pulse animation if value changed
     if (oldValue !== newValue.toString()) {
       const countElement = element.closest('.count');
-      countElement.classList.add('updated');
-      setTimeout(() => countElement.classList.remove('updated'), 300);
+      if (countElement) {
+        countElement.classList.add('updated');
+        setTimeout(() => countElement.classList.remove('updated'), 300);
+      }
     }
   }
 }
@@ -45,9 +47,9 @@ window.addEventListener("message", (event) => {
   }
 
   const invString = msg.inventory || msg?.data?.inventory || msg?.payload?.inventory;
-  if (typeof invString === "string") {
+  if (typeof invString === "string" || (invString && typeof invString === "object")) {
     try {
-      const inv = JSON.parse(invString);
+      const inv = typeof invString === "string" ? JSON.parse(invString) : invString;
       inventory = {};
       for (const id in itemMap) {
         inventory[id] = inv[id]?.amount || 0;
@@ -151,6 +153,11 @@ async function startOpening() {
   running = true;
   document.getElementById("start-btn").style.display = "none";
   document.getElementById("stop-btn").style.display = "block";
+  const runState = document.getElementById("run-state");
+  if (runState) {
+    runState.className = "state-pill running";
+    runState.innerHTML = "<i></i> RUNNING";
+  }
 
   const packs = ['prefix_pack_1', 'prefix_pack_2', 'prefix_pack_3'];
 
@@ -195,12 +202,22 @@ async function startOpening() {
   running = false;
   document.getElementById("start-btn").style.display = "block";
   document.getElementById("stop-btn").style.display = "none";
+  const runState = document.getElementById("run-state");
+  if (runState) {
+    runState.className = "state-pill idle";
+    runState.innerHTML = "<i></i> IDLE";
+  }
 }
 
 function stopOpening() {
   running = false;
   document.getElementById("start-btn").style.display = "block";
   document.getElementById("stop-btn").style.display = "none";
+  const runState = document.getElementById("run-state");
+  if (runState) {
+    runState.className = "state-pill idle";
+    runState.innerHTML = "<i></i> IDLE";
+  }
 }
 
 document.getElementById("start-btn").addEventListener("click", startOpening);
@@ -211,6 +228,7 @@ const tracker = document.getElementById("tracker");
 let isDragging = false, dragOffsetX = 0, dragOffsetY = 0;
 
 tracker.addEventListener("mousedown", (e) => {
+  if (e.target.closest("button") || e.target.closest("input") || e.target.closest("label")) return;
   isDragging = true;
   dragOffsetX = e.clientX - tracker.offsetLeft;
   dragOffsetY = e.clientY - tracker.offsetTop;
@@ -224,8 +242,12 @@ tracker.addEventListener("mousedown", (e) => {
 document.addEventListener("mousemove", (e) => {
   if (isDragging) {
     e.preventDefault();
-    tracker.style.left = `${e.clientX - dragOffsetX}px`;
-    tracker.style.top = `${e.clientY - dragOffsetY}px`;
+    const maxX = Math.max(0, window.innerWidth - tracker.offsetWidth);
+    const maxY = Math.max(0, window.innerHeight - tracker.offsetHeight);
+    const x = Math.max(0, Math.min(maxX, e.clientX - dragOffsetX));
+    const y = Math.max(0, Math.min(maxY, e.clientY - dragOffsetY));
+    tracker.style.left = `${x}px`;
+    tracker.style.top = `${y}px`;
   }
 });
 
