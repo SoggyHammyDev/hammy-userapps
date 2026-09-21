@@ -52,6 +52,8 @@ let selectedJobs = new Set();
 let bxpLogs = {};
 let lastBxp = {};
 let hasFirstGain = {};
+let sessionBaseline = {};
+let sessionStartedAt = {};
 
 const jobListEl = document.getElementById('job-list');
 const summaryTbody = document.getElementById('summary-tbody');
@@ -217,36 +219,43 @@ function renderSummary() {
 
 
 function getBxpPerHour(jobKey) {
-  const log = bxpLogs[jobKey] || [];
-  if (!hasFirstGain[jobKey] || log.length < 2) return null;
-  const now = Date.now();
-  const [first, last] = [log[0], log[log.length-1]];
-  const sessionDuration = last.time - first.time;
-  const sessionBXP = last.bxp - first.bxp;
-  const sessionHours = sessionDuration / 3600000;
-  const sessionBXPH = sessionHours > 0 ? sessionBXP / sessionHours : 0;
-  const RECENT_WINDOW_MS = 10 * 60 * 1000;
-  const recentDrops = log.filter(entry => now - entry.time <= RECENT_WINDOW_MS);
-  let recentBXPH = 0;
-  if (recentDrops.length >= 2) {
-    const recentFirst = recentDrops[0];
-    const recentLast = recentDrops[recentDrops.length-1];
-    const recentBXP = recentLast.bxp - recentFirst.bxp;
-    const recentDuration = recentLast.time - recentFirst.time;
-    const recentHours = recentDuration / 3600000;
-    if (recentHours > 0) recentBXPH = recentBXP / recentHours;
-  } else {
-    return Math.round(sessionBXPH);
-  }
-  const sessionWeight = Math.min(sessionDuration / RECENT_WINDOW_MS, 1.0);
-  const liveWeight = 1.0 - sessionWeight;
-  const hybridBXPH = sessionBXPH * sessionWeight + recentBXPH * liveWeight;
-  return Math.round(hybridBXPH);
+  const startBxp = sessionBaseline[jobKey];
+  const startTime = sessionStartedAt[jobKey];
+  const currentBxp = lastBxp[jobKey];
+
+  if (
+    typeof startBxp !== "number" ||
+    typeof startTime !== "number" ||
+    typeof currentBxp !== "number"
+  ) return null;
+
+  const gained = currentBxp - startBxp;
+  if (gained < 0) return null;
+
+  const elapsedMs = Date.now() - startTime;
+  if (elapsedMs < 1000) return gained > 0 ? 0 : null;
+
+  return Math.round(gained / (elapsedMs / 3600000));
 }
 
 function getBxpPerMinute(jobKey) {
-  const perHour = getBxpPerHour(jobKey);
-  return perHour !== null ? Math.round(perHour / 60) : null;
+  const startBxp = sessionBaseline[jobKey];
+  const startTime = sessionStartedAt[jobKey];
+  const currentBxp = lastBxp[jobKey];
+
+  if (
+    typeof startBxp !== "number" ||
+    typeof startTime !== "number" ||
+    typeof currentBxp !== "number"
+  ) return null;
+
+  const gained = currentBxp - startBxp;
+  if (gained < 0) return null;
+
+  const elapsedMs = Date.now() - startTime;
+  if (elapsedMs < 1000) return gained > 0 ? 0 : null;
+
+  return Math.round(gained / (elapsedMs / 60000));
 }
 
 window.addEventListener('message', (event) => {
@@ -291,18 +300,20 @@ window.addEventListener('message', (event) => {
     const previousAmount = lastBxp[jobKey];
 
     if (typeof previousAmount !== "number") {
-      bxpLogs[jobKey].push({ time: now - 1000, bxp: amount });
-      hasFirstGain[jobKey] = true;
+      sessionBaseline[jobKey] = amount;
+      sessionStartedAt[jobKey] = now;
+      bxpLogs[jobKey] = [{ time: now, bxp: amount }];
+      hasFirstGain[jobKey] = false;
     } else if (amount !== previousAmount) {
-      // Check if BXP decreased (sold/given away)
       if (amount < previousAmount) {
-        // BXP decreased - reset tracking to avoid negative rates
-        console.log(`🔄 BXP decreased for ${jobKey}: ${previousAmount} → ${amount} (likely sold/given away)`);
+        // Spending / transferring BXP starts a fresh rate session.
+        sessionBaseline[jobKey] = amount;
+        sessionStartedAt[jobKey] = now;
         bxpLogs[jobKey] = [{ time: now, bxp: amount }];
-        hasFirstGain[jobKey] = false; // Reset first gain flag
+        hasFirstGain[jobKey] = false;
       } else {
-        // BXP increased normally
         bxpLogs[jobKey].push({ time: now, bxp: amount });
+        hasFirstGain[jobKey] = true;
 
         if (bxpLogs[jobKey].length > 120) {
           bxpLogs[jobKey] = bxpLogs[jobKey].slice(-120);
@@ -355,6 +366,9 @@ document.getElementById('reset-bxp-log').onclick = () => {
   bxpLogs = {};
   hasFirstGain = {};
   lastBxp = {};
+  sessionBaseline = {};
+  sessionStartedAt = {};
+  window.parent.postMessage({ type: "getData" }, "*");
   renderSummary();
 };
 toggleBxpHr.onchange = toggleBxpMin.onchange = renderSummary;
@@ -452,9 +466,11 @@ function init() {
     const storedLast = JSON.parse(localStorage.getItem("bxp_last") || "{}");
     const storedFirst = JSON.parse(localStorage.getItem("bxp_first") || "{}");
 
-    bxpLogs = storedLogs;
+    bxpLogs = {};
     lastBxp = storedLast;
-    hasFirstGain = storedFirst;
+    hasFirstGain = {};
+    sessionBaseline = {};
+    sessionStartedAt = {};
   } catch (e) {
     console.warn("⚠️ Failed to restore BXP data from localStorage");
   }
@@ -465,5 +481,10 @@ function init() {
   window.parent.postMessage({ type: "getData" }, "*");
 }
 
+
+// Recalculate rates against real elapsed session time even when no new BXP packet arrives.
+setInterval(() => {
+  if (selectedJobs.size > 0) renderSummary();
+}, 1000);
 
 init();
