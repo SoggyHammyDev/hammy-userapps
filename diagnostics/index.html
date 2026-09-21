@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex">
   <title>Hammy Diagnostics - Transport Tycoon</title>
-  <link rel="shortcut icon" type="image/png" href="https://tidalfaction.com/tidal.png">
+  <link rel="icon" href="data:,">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main id="app" class="app-shell">
-    <header class="topbar">
+    <header class="topbar" id="diag-drag-handle">
       <div>
         <div class="eyebrow">Transport Tycoon UserApp</div>
         <h1>Hammy Diagnostics</h1>
@@ -180,9 +180,10 @@
     </section>
 
     <footer>
-      <span>Hammy Diagnostics v1.0</span>
+      <span>Hammy Diagnostics v1.1</span>
       <span id="footer-state">No game data received yet.</span>
     </footer>
+    <div id="diag-resize-handle" title="Resize"></div>
   </main>
 
   <script src="app.js"></script>
