@@ -1,37 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>EXP Boost Redeemer</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+  <meta name="robots" content="noindex">
+  <title>Hammy EXP Boosts</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="exp-redeemer">
-    <div id="exp-header">
-      <span class="exp-title">🎁 EXP Boosts</span>
-      <div class="exp-header-actions">
-        <span id="close" title="Close">✖</span>
+  <section id="exp-redeemer">
+    <header id="exp-header">
+      <div class="header-left">
+        <span class="app-icon">⚡</span>
+        <div class="header-copy">
+          <div class="title-row">
+            <span>EXP Boosts</span>
+            <span class="version-badge">v2</span>
+          </div>
+          <span class="subtitle"><span id="boost-count">0</span> boost types detected</span>
+        </div>
       </div>
-    </div>
+      <button id="close" class="icon-btn" title="Close" aria-label="Close">×</button>
+    </header>
+
     <div id="exp-content">
-      <button id="open-ui" class="primary" style="display:none;">Redeem EXP Boosts</button>
+      <div id="boost-summary" class="summary-card empty">
+        <div>
+          <span class="summary-label">Inventory Status</span>
+          <strong id="boost-status">No EXP boosts detected</strong>
+        </div>
+        <span id="total-boosts" class="count-pill">0</span>
+      </div>
+
+      <button id="open-ui" class="btn btn-primary" style="display:none;">Choose Boosts</button>
+
       <div id="popup" class="hidden">
+        <div class="popup-head">
+          <div>
+            <strong>Available Boosts</strong>
+            <span>Select one or more to redeem.</span>
+          </div>
+        </div>
+
         <form id="exp-form"></form>
+
         <div class="popup-actions">
-          <button id="redeem-btn" class="primary">Redeem Selected</button>
-          <button id="cancel-btn" type="button" class="secondary">Cancel</button>
+          <button id="redeem-btn" class="btn btn-primary">Redeem Selected</button>
+          <button id="cancel-btn" type="button" class="btn btn-secondary">Cancel</button>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div id="exp-toggle-btn" class="hidden" title="Open EXP Boost UI">
-    <svg width="24" height="24" viewBox="0 0 24 24" style="display:block">
-      <line x1="12" y1="6" x2="12" y2="18" stroke="white" stroke-width="3" stroke-linecap="round"/>
-      <line x1="6" y1="12" x2="18" y2="12" stroke="white" stroke-width="3" stroke-linecap="round"/>
-    </svg>
-  </div>
+  <button id="exp-toggle-btn" class="hidden toggle-btn" title="Open EXP Boost UI" aria-label="Open EXP Boost UI">⚡</button>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=20260920"></script>
 </body>
 </html>
