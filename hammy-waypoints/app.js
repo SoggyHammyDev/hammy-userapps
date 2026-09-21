@@ -47,6 +47,7 @@ function initDragFunctionality() {
 }
 
 function startDrag(e) {
+  if (e.target.closest("button") || e.target.closest("input") || e.target.closest("select") || e.target.closest("label")) return;
   isDragging = true;
   const rect = UI.app.getBoundingClientRect();
   dragOffset.x = e.clientX - rect.left;
@@ -92,8 +93,10 @@ function loadSavedPosition() {
     const saved = localStorage.getItem(POSITION_KEY);
     if (saved) {
       const position = JSON.parse(saved);
-      UI.app.style.left = `${position.x}px`;
-      UI.app.style.top = `${position.y}px`;
+      const x = Math.max(0, Math.min(Number(position.x) || 0, Math.max(0, window.innerWidth - UI.app.offsetWidth)));
+      const y = Math.max(0, Math.min(Number(position.y) || 0, Math.max(0, window.innerHeight - UI.app.offsetHeight)));
+      UI.app.style.left = `${x}px`;
+      UI.app.style.top = `${y}px`;
       UI.app.style.right = 'auto';
     }
   } catch (e) {
