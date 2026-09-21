@@ -8,6 +8,82 @@ const itemMap = {
 let inventory = {};
 let running = false;
 
+const PACK_MENU_NAMES = {
+  prefix_pack_1: "Blessing Pack [Series 1]",
+  prefix_pack_2: "Blessing Pack [Series 2]",
+  prefix_pack_3: "Blessing Pack [Series 3]"
+};
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function usePackViaMenu(id) {
+  const menuName = PACK_MENU_NAMES[id];
+  if (!menuName) return false;
+
+  return new Promise((resolve) => {
+    let step = 0;
+    let done = false;
+    let timeoutId;
+
+    const cleanup = (result) => {
+      if (done) return;
+      done = true;
+      window.removeEventListener("message", onMessage);
+      if (timeoutId) clearTimeout(timeoutId);
+      resolve(result);
+    };
+
+    const onMessage = (event) => {
+      let data = event.data;
+      if (data?.type === "data" && data.data) data = data.data;
+      if (!data || typeof data !== "object") return;
+
+      const activeMenu = data.menu;
+      const notification = typeof data.notification === "string" ? data.notification : "";
+
+      if (notification.includes(`Used 1 ~g~${menuName}~s~`)) {
+        cleanup(true);
+        return;
+      }
+
+      if (step === 0 && /main\s*menu/i.test(activeMenu || "")) {
+        step = 1;
+        window.parent.postMessage({
+          type: "forceMenuChoice",
+          choice: "Inventory",
+          mod: 0
+        }, "*");
+        return;
+      }
+
+      if (step === 1 && /inventory/i.test(activeMenu || "")) {
+        step = 2;
+        window.parent.postMessage({
+          type: "forceMenuChoice",
+          choice: menuName,
+          mod: 0
+        }, "*");
+        return;
+      }
+
+      if (step === 2 && activeMenu === menuName) {
+        step = 3;
+        window.parent.postMessage({
+          type: "forceMenuChoice",
+          choice: "Use",
+          mod: 0
+        }, "*");
+      }
+    };
+
+    window.addEventListener("message", onMessage);
+    window.parent.postMessage({ type: "openMainMenu" }, "*");
+
+    timeoutId = setTimeout(() => cleanup(false), 5000);
+  });
+}
+
+
 function updateUI() {
   for (const [id, elId] of Object.entries(itemMap)) {
     const element = document.getElementById(elId);
@@ -67,21 +143,35 @@ window.addEventListener("message", (event) => {
 });
 
 async function useItem(id) {
+  if (PACK_MENU_NAMES[id]) {
+    const before = inventory[id] || 0;
+    let success = await usePackViaMenu(id);
+
+    // Refresh and verify the pack count actually dropped.
+    requestInventory();
+    await sleep(500);
+
+    if (!success || (inventory[id] || 0) >= before) {
+      console.warn(`Menu use did not confirm for ${id}; trying direct command fallback.`);
+      window.parent.postMessage({
+        type: "sendCommand",
+        command: `item ${id} use`
+      }, "*");
+      await sleep(800);
+      requestInventory();
+      await sleep(400);
+    }
+    return;
+  }
+
   window.parent.postMessage({
     type: "sendCommand",
     command: `item ${id} use`
   }, "*");
 
-  if (id === 'prefix_pack_1_reset') {
-    await new Promise(res => setTimeout(res, 800));
-  } else if (id === 'prefix_pack_1') {
-    await new Promise(res => setTimeout(res, 600));
-  } else {
-    await new Promise(res => setTimeout(res, 150));
-  }
-
+  await sleep(id === "prefix_pack_1_reset" ? 900 : 250);
   requestInventory();
-  await new Promise(res => setTimeout(res, 150));
+  await sleep(300);
 }
 
 async function redeemBlessings() {
@@ -168,28 +258,43 @@ async function startOpening() {
     let found = false;
 
     for (const packId of packs) {
-        if ((inventory[packId] || 0) > 0) {
-        if ((inventory['prefix_pack_1_reset'] || 0) > 0) {
-            await useItem('prefix_pack_1_reset');
+      const beforePack = inventory[packId] || 0;
+      if (beforePack <= 0) continue;
 
-            await new Promise(r => setTimeout(r, 600));
-            requestInventory();
-            await new Promise(r => setTimeout(r, 600));
-        } else {
-            console.log("No cursed dice left. Stopping.");
-            running = false;
-            break;
-        }
+      // First try the pack directly through the same Inventory -> Pack -> Use
+      // flow that Transport Tycoon exposes manually.
+      await useItem(packId);
+      requestInventory();
+      await sleep(500);
 
-        if ((inventory[packId] || 0) > 0) {
-            await useItem(packId);
-            found = true;
-            break;
-        } else {
-            console.log(`⚠️ No ${packId} left after dice, skipping`);
-        }
-        }
+      if ((inventory[packId] || 0) < beforePack) {
+        found = true;
+        break;
+      }
 
+      // If TT rejected the opening because this account needs a reset,
+      // consume one Cursed Dice, then retry the pack once.
+      if ((inventory["prefix_pack_1_reset"] || 0) > 0) {
+        console.log(`Pack ${packId} did not open; using one Cursed Dice and retrying.`);
+        await useItem("prefix_pack_1_reset");
+        await sleep(700);
+        requestInventory();
+        await sleep(500);
+
+        const retryBefore = inventory[packId] || 0;
+        await useItem(packId);
+        requestInventory();
+        await sleep(500);
+
+        if ((inventory[packId] || 0) < retryBefore) {
+          found = true;
+          break;
+        }
+      } else {
+        console.log("No cursed dice left and pack could not be opened. Stopping.");
+        running = false;
+        break;
+      }
     }
 
     if (!found) break;
