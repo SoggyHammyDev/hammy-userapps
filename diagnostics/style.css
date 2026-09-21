@@ -1,5 +1,4 @@
 :root {
-  color-scheme: dark;
   --bg: #090d13;
   --panel: rgba(17, 24, 39, .94);
   --panel-2: rgba(29, 39, 54, .78);
@@ -237,4 +236,15 @@ footer{padding:7px 10px;font-size:8px}
   min-width:520px;
   min-height:360px;
   margin:0!important;
+}
+
+/* Force the NUI canvas itself transparent in FiveM. */
+html,
+body{
+  background:transparent!important;
+  background-color:rgba(0,0,0,0)!important;
+}
+
+html{
+  color-scheme:normal!important;
 }
