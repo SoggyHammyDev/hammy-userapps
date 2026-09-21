@@ -22,7 +22,26 @@ function parseInventory(data) {
 
 function updateUI() {
   const openBtn = document.getElementById("open-ui");
-  openBtn.style.display = Object.keys(foundBoosts).length > 0 ? "inline-block" : "none";
+  const keys = Object.keys(foundBoosts).filter(id => (foundBoosts[id] || 0) > 0);
+  const total = keys.reduce((sum, id) => sum + (Number(foundBoosts[id]) || 0), 0);
+
+  openBtn.style.display = keys.length > 0 ? "inline-block" : "none";
+
+  const boostCount = document.getElementById("boost-count");
+  const totalBoosts = document.getElementById("total-boosts");
+  const boostStatus = document.getElementById("boost-status");
+  const summary = document.getElementById("boost-summary");
+
+  if (boostCount) boostCount.textContent = keys.length;
+  if (totalBoosts) totalBoosts.textContent = total.toLocaleString();
+
+  if (boostStatus) {
+    boostStatus.textContent = keys.length > 0
+      ? `${total.toLocaleString()} boost${total === 1 ? "" : "s"} ready to redeem`
+      : "No EXP boosts detected";
+  }
+
+  if (summary) summary.classList.toggle("empty", keys.length === 0);
 }
 
 function buildPopup() {
@@ -72,6 +91,7 @@ document.getElementById("redeem-btn").addEventListener("click", () => {
   let offsetX, offsetY, dragging = false;
 
   header.addEventListener("mousedown", (e) => {
+    if (e.target.closest("button")) return;
     dragging = true;
     offsetX = e.clientX - dragEl.offsetLeft;
     offsetY = e.clientY - dragEl.offsetTop;
@@ -79,8 +99,12 @@ document.getElementById("redeem-btn").addEventListener("click", () => {
 
   window.addEventListener("mousemove", (e) => {
     if (dragging) {
-      const left = e.clientX - offsetX;
-      const top = e.clientY - offsetY;
+      const rawLeft = e.clientX - offsetX;
+      const rawTop = e.clientY - offsetY;
+      const maxLeft = Math.max(0, window.innerWidth - dragEl.offsetWidth);
+      const maxTop = Math.max(0, window.innerHeight - dragEl.offsetHeight);
+      const left = Math.max(0, Math.min(rawLeft, maxLeft));
+      const top = Math.max(0, Math.min(rawTop, maxTop));
       dragEl.style.left = left + "px";
       dragEl.style.top = top + "px";
       localStorage.setItem("exp_redeemer_left", left);
@@ -144,8 +168,10 @@ window.addEventListener("load", () => {
   const left = localStorage.getItem("exp_redeemer_left");
   const top = localStorage.getItem("exp_redeemer_top");
   if (left && top) {
-    expRedeemer.style.left = left + "px";
-    expRedeemer.style.top = top + "px";
+    const x = Math.max(0, Math.min(Number(left) || 0, Math.max(0, window.innerWidth - expRedeemer.offsetWidth)));
+    const y = Math.max(0, Math.min(Number(top) || 0, Math.max(0, window.innerHeight - expRedeemer.offsetHeight)));
+    expRedeemer.style.left = x + "px";
+    expRedeemer.style.top = y + "px";
   }
 
   document.getElementById("close").addEventListener("click", () => {
