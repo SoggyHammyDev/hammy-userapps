@@ -219,9 +219,22 @@ footer{padding:7px 10px;font-size:8px}
 
 @media(max-width:950px){
   .app-shell{
-    width:calc(100vw - 20px);
-    height:calc(100vh - 20px);
-    left:10px;
-    top:10px;
+    width:min(760px,82vw);
+    height:min(620px,78vh);
+    left:20px;
+    top:20px;
+    min-width:520px;
+    min-height:360px;
   }
+}
+
+/* Hard cap: Diagnostics must remain a floating UserApp in FiveM. */
+.app-shell{
+  width:min(900px,82vw)!important;
+  height:min(680px,78vh)!important;
+  max-width:900px!important;
+  max-height:680px!important;
+  min-width:520px;
+  min-height:360px;
+  margin:0!important;
 }
