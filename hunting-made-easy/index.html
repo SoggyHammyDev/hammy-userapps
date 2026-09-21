@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+  <meta name="robots" content="noindex">
+  <title>Hunting Made Easy</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <section class="hud" id="hud">
+    <header class="header" id="dragHandle">
+      <div class="title-wrap">
+        <span class="app-icon">🦌</span>
+        <div>
+          <div class="title-row"><strong>Hunting Made Easy</strong><span>v0.1</span></div>
+          <small id="jobText">Waiting for hunting data</small>
+        </div>
+      </div>
+      <div class="header-actions">
+        <span class="live"><i></i> LIVE</span>
+        <button id="minimizeBtn" title="Minimize">−</button>
+      </div>
+    </header>
+
+    <main class="content">
+      <section class="stats">
+        <article><span>Hunting XP</span><strong id="xpTotal">0</strong></article>
+        <article><span>Session Gain</span><strong id="xpGain">0</strong></article>
+        <article><span>XP / Hour</span><strong id="xpHour">0</strong></article>
+        <article><span>Hunting BXP</span><strong id="bxpTotal">0</strong></article>
+      </section>
+
+      <section class="inventory-card">
+        <div class="section-head">
+          <span>Inventory</span>
+          <strong id="weightPercent">--%</strong>
+        </div>
+        <div class="bar"><div id="weightFill"></div></div>
+        <div class="weight-row">
+          <span><strong id="weightNow">--</strong> kg</span>
+          <span>of <strong id="weightMax">--</strong> kg</span>
+        </div>
+      </section>
+
+      <section class="loot-card">
+        <div class="section-head">
+          <span>Hunting Inventory</span>
+          <span id="lootCount">0 tracked</span>
+        </div>
+        <div id="lootList" class="loot-list">
+          <div class="empty">No hunting-related inventory found yet.</div>
+        </div>
+      </section>
+
+      <section class="session-card">
+        <div>
+          <span>Runtime</span>
+          <strong id="runtime">00:00:00</strong>
+        </div>
+        <div>
+          <span>Status</span>
+          <strong id="status">Waiting</strong>
+        </div>
+      </section>
+    </main>
+  </section>
+  <script src="app.js"></script>
+</body>
+</html>
