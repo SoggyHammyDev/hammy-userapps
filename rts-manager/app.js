@@ -44,7 +44,8 @@ function updateUI() {
   
   const rtsCards = Object.keys(inventory).filter(id => id.startsWith("rts_card|"));
   const totalRTS = rtsCards.reduce((sum, id) => sum + (inventory[id] || 0), 0);
-  rtsCount.textContent = `RTS Cards: ${totalRTS}`;
+  const countValue = rtsCount.querySelector(".summary-value");
+  if (countValue) countValue.textContent = totalRTS.toLocaleString();
   
   
   const manualDeleteBtn = document.getElementById("manual-delete");
