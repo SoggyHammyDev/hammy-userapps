@@ -139,6 +139,8 @@ function restoreTrackerSize() {
 
 function renderJobList() {
   jobListEl.innerHTML = '';
+  const selectedCountEl = document.getElementById('selected-job-count');
+  if (selectedCountEl) selectedCountEl.textContent = selectedJobs.size;
   const sortedJobs = [...JOBS].sort((a, b) => a.label.localeCompare(b.label));
   sortedJobs.forEach(job => {
     const label = document.createElement('label');
@@ -153,6 +155,8 @@ function renderJobList() {
       else selectedJobs.delete(job.key);
       label.classList.toggle('selected', this.checked);
       saveSelectedJobs();
+      const selectedCountEl = document.getElementById('selected-job-count');
+      if (selectedCountEl) selectedCountEl.textContent = selectedJobs.size;
       renderSummary();
     };
     label.appendChild(input);
@@ -177,6 +181,8 @@ function loadSelectedJobs() {
 
 function renderSummary() {
   summaryTbody.innerHTML = '';
+  const summarySection = document.getElementById('bxp-summary-section');
+  if (summarySection) summarySection.classList.toggle('empty', selectedJobs.size === 0);
 
   const showHr = toggleBxpHr.checked;
   const showMin = toggleBxpMin.checked;
@@ -341,6 +347,10 @@ settingsIcon.onclick = () => {
   }
 };
 
+document.getElementById('close-settings').onclick = () => {
+  settingsPanel.style.display = 'none';
+};
+
 document.getElementById('reset-bxp-log').onclick = () => {
   bxpLogs = {};
   hasFirstGain = {};
@@ -355,7 +365,7 @@ toggleBxpHr.onchange = toggleBxpMin.onchange = renderSummary;
   let dragOffsetX = 0, dragOffsetY = 0;
 
   dragHandle.addEventListener('mousedown', (e) => {
-    if (e.target === settingsIcon) return;
+    if (e.target.closest("button") || e.target.closest("input") || e.target.closest("label") || e.target.closest("select")) return;
     isDragging = true;
     const rect = trackerApp.getBoundingClientRect();
     dragOffsetX = e.clientX - rect.left;
@@ -367,9 +377,13 @@ toggleBxpHr.onchange = toggleBxpMin.onchange = renderSummary;
     if (isDragging) {
       const newLeft = e.clientX - dragOffsetX;
       const newTop = e.clientY - dragOffsetY;
+      const maxLeft = Math.max(0, window.innerWidth - trackerApp.offsetWidth);
+      const maxTop = Math.max(0, window.innerHeight - trackerApp.offsetHeight);
+      const clampedLeft = Math.max(0, Math.min(newLeft, maxLeft));
+      const clampedTop = Math.max(0, Math.min(newTop, maxTop));
 
-      trackerApp.style.left = `${newLeft}px`;
-      trackerApp.style.top = `${newTop}px`;
+      trackerApp.style.left = `${clampedLeft}px`;
+      trackerApp.style.top = `${clampedTop}px`;
       trackerApp.style.position = "absolute";
 
       localStorage.setItem(TRACKER_POSITION_KEY, JSON.stringify({
@@ -401,10 +415,10 @@ window.addEventListener('keydown', escapeListener);
 
 document.getElementById('toggle-job-list').onclick = () => {
   const jobList = document.getElementById('job-list');
-  const toggleBtn = document.getElementById('toggle-job-list');
+  const section = document.getElementById('job-select-section');
   const currentlyVisible = jobList.style.display === 'flex';
   jobList.style.display = currentlyVisible ? 'none' : 'flex';
-  toggleBtn.textContent = currentlyVisible ? '▶' : '▼';
+  if (section) section.classList.toggle('open', !currentlyVisible);
 };
 
 document.getElementById("reloadButton").addEventListener("click", function () {
@@ -417,8 +431,12 @@ function restoreTrackerPosition() {
   if (pos) {
     try {
       const { left, top } = JSON.parse(pos);
-      trackerApp.style.left = left;
-      trackerApp.style.top = top;
+      const x = parseInt(left, 10) || 0;
+      const y = parseInt(top, 10) || 0;
+      const maxLeft = Math.max(0, window.innerWidth - trackerApp.offsetWidth);
+      const maxTop = Math.max(0, window.innerHeight - trackerApp.offsetHeight);
+      trackerApp.style.left = Math.max(0, Math.min(x, maxLeft)) + "px";
+      trackerApp.style.top = Math.max(0, Math.min(y, maxTop)) + "px";
     } catch {}
   }
 }
