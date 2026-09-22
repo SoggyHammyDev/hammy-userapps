@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+  <meta name="robots" content="noindex">
+  <title>Train Conductor Assistant</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <section id="app" class="app" style="left:40px;top:40px">
+    <header id="drag-handle" class="header">
+      <div class="brand">
+        <span class="icon">🚆</span>
+        <div>
+          <div class="title">Train Assistant <span>v0.1</span></div>
+          <div id="connection" class="sub">Waiting for Transport Tycoon…</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="reset-btn" title="Reset session">↻</button>
+        <button id="minimize-btn" title="Minimize">−</button>
+      </div>
+    </header>
+
+    <main id="body">
+      <section class="route-card">
+        <div class="route-top">
+          <div>
+            <div class="label">Current route</div>
+            <strong id="route-name">No active train route</strong>
+          </div>
+          <span id="reward-mode" class="badge">WAITING</span>
+        </div>
+
+        <div class="progress-row">
+          <span id="stop-text">Stop — / —</span>
+          <span id="route-percent">0%</span>
+        </div>
+        <div class="progress"><i id="progress-bar"></i></div>
+
+        <div class="train-line">
+          <span id="train-name">Train —</span>
+          <span id="route-time">00:00</span>
+        </div>
+      </section>
+
+      <section class="stats-grid">
+        <div class="stat"><span>Cash</span><strong id="route-cash">$0</strong><small id="cash-rate">$0/hr</small></div>
+        <div class="stat"><span>Conductor</span><strong id="route-conductor">+0</strong><small id="conductor-rate">0/hr</small></div>
+        <div class="stat"><span>Player</span><strong id="route-player">+0</strong><small id="player-rate">0/hr</small></div>
+        <div class="stat"><span>Train XP</span><strong id="route-xp">+0</strong><small id="xp-rate">0/hr</small></div>
+      </section>
+
+      <section class="session">
+        <div class="session-head">
+          <span>Session</span>
+          <strong id="session-time">00:00:00</strong>
+        </div>
+        <div class="session-row"><span>Routes completed</span><strong id="routes-completed">0</strong></div>
+        <div class="session-row"><span>Stops completed</span><strong id="stops-completed">0</strong></div>
+        <div class="session-row"><span>Cash earned</span><strong id="session-cash">$0</strong></div>
+        <div class="session-row"><span>Conductor tokens</span><strong id="session-conductor">+0</strong></div>
+        <div class="session-row"><span>Player tokens</span><strong id="session-player">+0</strong></div>
+        <div class="session-row"><span>Train XP</span><strong id="session-xp">+0</strong></div>
+        <div class="session-row"><span>Last reward</span><strong id="last-reward">—</strong></div>
+      </section>
+    </main>
+  </section>
+  <script src="app.js"></script>
+</body>
+</html>
