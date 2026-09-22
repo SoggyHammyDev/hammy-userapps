@@ -11,6 +11,7 @@ let previousInventory = null;
 let previousWallet = null;
 let recentWalletGains = [];
 let pendingRouteCompletion = false;
+let previousNotification = null;
 let minimized = false;
 
 const session = {
@@ -178,7 +179,12 @@ function handleData(data){
     }
     latest._prevTrainXp=data.exp_train_train;
   }
-  if(data.notification) handleNotification(data.notification);
+  if(typeof data.notification === "string"){
+    if(previousNotification !== null && data.notification !== previousNotification){
+      handleNotification(data.notification);
+    }
+    previousNotification = data.notification;
+  }
 
   if("status" in data){
     const parsed=parseStatus(data.status);
@@ -199,7 +205,9 @@ function handleData(data){
       if(!route){
         startRoute(parsed);
         pendingRouteCompletion = false;
-      }else if((pendingRouteCompletion || parsed.name!==route.name) && parsed.stop===0){
+      }else if(pendingRouteCompletion || parsed.name!==route.name){
+        // The 0/N state can be very brief. If we first see the new direction
+        // at 1/N, 2/N, etc., the route name change is still authoritative.
         completeRoute();
         startRoute(parsed);
         pendingRouteCompletion = false;
