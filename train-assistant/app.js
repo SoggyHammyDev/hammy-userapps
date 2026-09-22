@@ -43,7 +43,15 @@ function clean(text=""){
     .replace(/<[^>]*>/g,"")
     .trim();
 }
+function tryParseJson(value){
+  if(typeof value !== "string") return value;
+  const trimmed=value.trim();
+  if(!trimmed) return value;
+  if(!((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]")))) return value;
+  try{return JSON.parse(trimmed);}catch{return value;}
+}
 function parseStatus(status){
+  status=tryParseJson(status);
   if(!status || !Array.isArray(status.lines)) return null;
   const line1=clean(status.lines[0]||"");
   const line2=clean(status.lines[1]||"");
@@ -135,6 +143,7 @@ function handleNotification(raw){
 }
 
 function handleInventory(inv){
+  inv=tryParseJson(inv);
   if(!inv || typeof inv!=="object") return;
   if(previousInventory){
     const pairs=[
@@ -155,6 +164,10 @@ function handleInventory(inv){
 }
 
 function handleData(data){
+  if(!data || typeof data!=="object") return;
+  const normalized={};
+  for(const [key,value] of Object.entries(data)) normalized[key]=tryParseJson(value);
+  data=normalized;
   latest={...latest,...data};
   document.getElementById("connection").textContent =
     (latest.job==="conductor" || latest.job_name==="Train Conductor") ? "Train Conductor detected" : "Waiting for Train Conductor";
@@ -322,22 +335,7 @@ loadSession();
 restorePosition();
 render();
 
-function requestData(){
-  window.parent.postMessage({type:"getData"},"*");
-}
-
-// Render live rates every second.
+// The game pushes subsequent updates through the message listener.
+// getData is only needed once to bootstrap the current state.
 setInterval(render,1000);
-
-// FiveM can miss the first getData request during UserApp startup.
-// Request aggressively until we have a route, then keep a light refresh
-// so the app can recover from a missed status packet or being opened mid-route.
-requestData();
-setTimeout(requestData,400);
-setTimeout(requestData,1200);
-setInterval(()=>{
-  if(!route) requestData();
-},1500);
-setInterval(()=>{
-  if(route) requestData();
-},5000);
+window.parent.postMessage({type:"getData"},"*");
