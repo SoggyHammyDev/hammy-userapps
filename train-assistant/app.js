@@ -321,5 +321,23 @@ window.addEventListener("message",e=>{
 loadSession();
 restorePosition();
 render();
+
+function requestData(){
+  window.parent.postMessage({type:"getData"},"*");
+}
+
+// Render live rates every second.
 setInterval(render,1000);
-window.parent.postMessage({type:"getData"},"*");
+
+// FiveM can miss the first getData request during UserApp startup.
+// Request aggressively until we have a route, then keep a light refresh
+// so the app can recover from a missed status packet or being opened mid-route.
+requestData();
+setTimeout(requestData,400);
+setTimeout(requestData,1200);
+setInterval(()=>{
+  if(!route) requestData();
+},1500);
+setInterval(()=>{
+  if(route) requestData();
+},5000);
