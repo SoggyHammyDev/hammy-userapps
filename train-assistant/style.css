@@ -51,12 +51,12 @@ button{font:inherit}
   background:rgba(56,189,248,.08);
   font-size:13px;
 }
-.title{font-size:11px;font-weight:900;letter-spacing:-.01em}
-.title span{color:var(--cyan);font-size:7px;margin-left:2px}
+.title{font-size:13px;font-weight:900;letter-spacing:-.01em}
+.title span{color:var(--cyan);font-size:8px;margin-left:2px}
 .sub{
   margin-top:1px;
   color:var(--muted);
-  font-size:7px;
+  font-size:11px;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
@@ -87,7 +87,7 @@ main{padding:6px}
   align-items:flex-start;
 }
 .label,.stat span,.session-head span,.session-grid span,.last-reward span{
-  font-size:7px;
+  font-size:9px;
   text-transform:uppercase;
   letter-spacing:.07em;
   color:var(--muted);
@@ -97,8 +97,8 @@ main{padding:6px}
   display:block;
   margin-top:2px;
   max-width:205px;
-  font-size:11px;
-  line-height:1.15;
+  font-size:13px;
+  line-height:1.2;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
@@ -110,7 +110,7 @@ main{padding:6px}
   border-radius:999px;
   background:rgba(251,191,36,.07);
   color:var(--amber);
-  font-size:6px;
+  font-size:8px;
   font-weight:900;
   letter-spacing:.05em;
 }
@@ -125,7 +125,7 @@ main{padding:6px}
   justify-content:space-between;
   margin-top:6px;
   color:#c2d0df;
-  font-size:8px;
+  font-size:10px;
   font-weight:700;
 }
 .progress{height:4px;margin-top:3px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden}
@@ -154,14 +154,14 @@ main{padding:6px}
 .stat strong{
   display:block;
   margin-top:2px;
-  font-size:13px;
+  font-size:16px;
   line-height:1.05;
 }
 .stat small{
   display:block;
   margin-top:2px;
   color:var(--muted);
-  font-size:7px;
+  font-size:9px;
   font-weight:600;
 }
 .session{padding:7px}
@@ -172,7 +172,7 @@ main{padding:6px}
   padding-bottom:5px;
   border-bottom:1px solid var(--line);
 }
-.session-head strong{font-size:8px}
+.session-head strong{font-size:10px}
 .session-grid{
   display:grid;
   grid-template-columns:repeat(3,1fr);
@@ -186,7 +186,7 @@ main{padding:6px}
   background:rgba(255,255,255,.035);
   text-align:center;
 }
-.session-grid span{display:block;font-size:6px}
+.session-grid span{display:block;font-size:8px}
 .session-grid strong{
   display:block;
   margin-top:2px;
@@ -209,7 +209,7 @@ main{padding:6px}
   min-width:0;
   max-width:235px;
   color:#dce8f4;
-  font-size:7px;
+  font-size:9px;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
