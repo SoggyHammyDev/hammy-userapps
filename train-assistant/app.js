@@ -10,6 +10,7 @@ let previousStatus = null;
 let previousInventory = null;
 let previousWallet = null;
 let recentWalletGains = [];
+let pendingRouteCompletion = false;
 let minimized = false;
 
 const session = {
@@ -184,15 +185,24 @@ function handleData(data){
     const prevParsed=parseStatus(previousStatus);
 
     if(!parsed && prevParsed && route){
-      // Train clears the status briefly at the final stop before the next route appears.
-      completeRoute();
-      route=null;
+      // Final train stop clears status before the reward bundle arrives.
+      // Keep the route alive until the next 0/N route appears so those rewards
+      // stay attached to the route that actually earned them.
+      pendingRouteCompletion = true;
+      if(route.stop < route.total){
+        const remaining = route.total - route.stop;
+        session.stops += remaining;
+        route.stop = route.total;
+        session.lastReward = "Final stop complete";
+      }
     }else if(parsed){
       if(!route){
         startRoute(parsed);
-      }else if(parsed.name!==route.name && parsed.stop===0){
+        pendingRouteCompletion = false;
+      }else if((pendingRouteCompletion || parsed.name!==route.name) && parsed.stop===0){
         completeRoute();
         startRoute(parsed);
+        pendingRouteCompletion = false;
       }else{
         if(parsed.stop>route.stop){
           const diff=parsed.stop-route.stop;
