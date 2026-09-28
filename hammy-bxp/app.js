@@ -3,6 +3,8 @@
 
   const TRIGGER = "hammybxpload";
   const TRIGGER_KEY = "trigger_" + TRIGGER;
+  const EXP_TRIGGER = "hammybxpcollectexp";
+  const EXP_TRIGGER_KEY = "trigger_" + EXP_TRIGGER;
   const POSITION_KEY = "hammyBxp.position.v1";
   const SETTINGS_KEY = "hammyBxp.settings.v1";
   const FIRST_MENU_WINDOW_MS = 3000;
@@ -61,7 +63,6 @@
     settings: {
       dumpBeforeTake: false,
       useMk15: true,
-      dumpExpToInventory: false,
       trailer: "trailerlarge"
     }
   };
@@ -141,7 +142,6 @@
       if (saved && typeof saved === "object") {
         if (typeof saved.dumpBeforeTake === "boolean") state.settings.dumpBeforeTake = saved.dumpBeforeTake;
         if (typeof saved.useMk15 === "boolean") state.settings.useMk15 = saved.useMk15;
-        if (typeof saved.dumpExpToInventory === "boolean") state.settings.dumpExpToInventory = saved.dumpExpToInventory;
         if (typeof saved.trailer === "string" && (saved.trailer === "" || TRAILERS[saved.trailer])) {
           state.settings.trailer = saved.trailer;
         }
@@ -150,7 +150,6 @@
 
     $("dumpBeforeTake").checked = state.settings.dumpBeforeTake;
     $("useMk15").checked = state.settings.useMk15;
-    $("dumpExpToInventory").checked = state.settings.dumpExpToInventory;
     $("trailerSelect").value = state.settings.trailer;
   }
 
@@ -567,7 +566,7 @@
   }
 
   async function dumpHuntingExpFromSource(source) {
-    if (!state.settings.dumpExpToInventory || !source) return;
+    if (!source) return;
 
     const knownAmount = huntingExpAmountInTarget(source);
     if (knownAmount === 0) return;
@@ -604,6 +603,74 @@
     }
 
     await closeCurrentMenu();
+  }
+
+  async function collectHuntingExp() {
+    if (state.running || state.refillRunning) return;
+
+    const targets = selectedTargets();
+    if (!targets.length) {
+      setStatus("No trunks selected", "Choose a trailer and/or enable MK15.", "error");
+      notify("Choose a trailer and/or enable MK15 first.");
+      return;
+    }
+
+    state.running = true;
+    $("loadNow").disabled = true;
+    $("collectExp").disabled = true;
+
+    let totalCollected = 0;
+    let touched = 0;
+
+    try {
+      for (const target of targets) {
+        const knownAmount = huntingExpAmountInTarget(target);
+
+        if (knownAmount === 0) continue;
+
+        setStatus(
+          "Collecting Hunting EXP",
+          "Checking " + target.name + ".",
+          "busy"
+        );
+
+        const before = knownAmount ?? 0;
+        await dumpHuntingExpFromSource(target);
+        const after = huntingExpAmountInTarget(target);
+
+        if (knownAmount != null) {
+          const collected = Math.max(0, knownAmount - (after ?? 0));
+          totalCollected += collected;
+        }
+
+        touched += 1;
+      }
+
+      setStatus(
+        "Hunting EXP collected",
+        touched
+          ? (totalCollected > 0
+              ? totalCollected.toLocaleString() + " Hunting EXP moved to inventory."
+              : "Finished checking the configured trunks.")
+          : "No Hunting EXP was detected in the configured trunks.",
+        "ok"
+      );
+
+      notify(
+        totalCollected > 0
+          ? totalCollected.toLocaleString() + " Hunting EXP moved to inventory."
+          : "Finished collecting Hunting EXP."
+      );
+    } catch (error) {
+      console.error("[Hammy BXP EXP collect]", error);
+      setStatus("EXP collection stopped", error?.message ?? String(error), "error");
+      notify("EXP collection error: " + (error?.message ?? error));
+    } finally {
+      state.running = false;
+      $("loadNow").disabled = false;
+      $("collectExp").disabled = false;
+      render();
+    }
   }
 
   function trunkCommand(target) {
@@ -671,14 +738,6 @@
   }
 
   async function advanceFeedSource() {
-    const exhaustedSource = currentFeedSource();
-
-    try {
-      await dumpHuntingExpFromSource(exhaustedSource);
-    } catch (error) {
-      console.warn("[Hammy BXP EXP dump]", error);
-    }
-
     await closeCurrentMenu();
     state.feedSourceIndex += 1;
 
@@ -866,6 +925,7 @@
     if (!data || typeof data !== "object") return;
 
     const previousTrigger = state.cache[TRIGGER_KEY];
+    const previousExpTrigger = state.cache[EXP_TRIGGER_KEY];
 
     for (const [key, value] of Object.entries(data)) {
       if (key === "menu_choices") state.cache[key] = parseChoices(value);
@@ -915,6 +975,14 @@
       data[TRIGGER_KEY] !== previousTrigger
     ) {
       armSequence();
+    }
+
+    if (
+      state.keybindsEnabled &&
+      Object.prototype.hasOwnProperty.call(data, EXP_TRIGGER_KEY) &&
+      data[EXP_TRIGGER_KEY] !== previousExpTrigger
+    ) {
+      collectHuntingExp();
     }
 
     if (!state.running && !state.refillRunning && isFeedMenu()) {
@@ -968,12 +1036,6 @@
     render();
   });
 
-  $("dumpExpToInventory").addEventListener("change", event => {
-    state.settings.dumpExpToInventory = event.target.checked;
-    saveSettings();
-    render();
-  });
-
   $("trailerSelect").addEventListener("change", event => {
     state.settings.trailer = event.target.value;
     saveSettings();
@@ -981,6 +1043,7 @@
   });
 
   $("loadNow").addEventListener("click", armSequence);
+  $("collectExp").addEventListener("click", collectHuntingExp);
 
   loadSettings();
   setupDrag();
@@ -992,6 +1055,11 @@
       type: "registerTrigger",
       trigger: TRIGGER,
       name: "Hammy BXP Load"
+    }, "*");
+    window.parent.postMessage({
+      type: "registerTrigger",
+      trigger: EXP_TRIGGER,
+      name: "Hammy BXP Collect EXP"
     }, "*");
   }, 250);
 
