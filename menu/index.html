@@ -94,7 +94,7 @@
       <div class="brand">
         <div class="icon">☰</div>
         <div>
-          <div class="title">Hammy Menu Styler <span>v0.1</span></div>
+          <div class="title">Hammy Menu Styler <span>v0.2</span></div>
           <div class="subtitle">TT HUD / Menu Diagnostics</div>
         </div>
       </div>
@@ -215,7 +215,7 @@
           background:rgba(8,12,18,.97)!important;
         }
 
-        .menu .choices div{
+        .menu .choices > div{
           margin:3px 0!important;
           padding:8px 10px!important;
           border:1px solid transparent!important;
@@ -226,10 +226,17 @@
           transition:background .12s ease,border-color .12s ease!important;
         }
 
-        .menu .choices div:hover,.menu .choices .selected{
+        .menu .choices > div:hover,
+        .menu .choices > div.selected{
           background:rgba(56,189,248,.10)!important;
           border-color:rgba(56,189,248,.20)!important;
           color:#ffffff!important;
+        }
+
+        /* Keep embedded widgets (inventory weight/progress bars, etc.) from
+           inheriting menu-row card styling. */
+        .menu .choices > div div{
+          border-radius:inherit;
         }
 
         .menu_description{
