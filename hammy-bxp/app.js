@@ -53,6 +53,10 @@
     armedUntil: 0,
     waitingForClose: false,
     waitingForNextOpen: false,
+    feedActive: false,
+    feedSources: [],
+    feedSourceIndex: 0,
+    refillRunning: false,
     settings: {
       dumpBeforeTake: false,
       useMk15: true,
@@ -361,8 +365,15 @@
       state.waitingForNextOpen = false;
 
       const names = state.targets.map(t => t.name).join(" + ");
-      setStatus("BXP load complete", names + " loaded with " + ITEM.name + ".", "ok");
-      notify(names + " loaded with " + ITEM.name + ".");
+      state.feedSources = [...state.targets];
+      state.feedSourceIndex = 0;
+      state.feedActive = true;
+      setStatus(
+        "BXP load complete",
+        names + " loaded. At Roxwood Loft, open the Feed the Hunters menu to begin.",
+        "ok"
+      );
+      notify(names + " loaded. Hunter feeding is armed.");
       return;
     }
 
@@ -482,6 +493,172 @@
     }, FIRST_MENU_WINDOW_MS + 50);
   }
 
+  function isFeedMenu() {
+    return state.cache.menu_open === true &&
+      clean(state.cache.menu).toLowerCase() === "roxwood loft" &&
+      Boolean(choiceByText("Feed the Hunters"));
+  }
+
+  function currentFeedSource() {
+    return state.feedSources[state.feedSourceIndex] ?? null;
+  }
+
+  function trunkCommand(target) {
+    return target?.id === "mk15" ? "rm_cabtrunk" : "rm_trunk";
+  }
+
+  async function closeCurrentMenu() {
+    for (let i = 0; i < 3 && state.cache.menu_open === true; i++) {
+      window.parent.postMessage({ type: "forceMenuBack" }, "*");
+      await sleep(20);
+    }
+  }
+
+  async function refillFromCurrentSource() {
+    if (!state.feedActive || state.refillRunning) return;
+
+    state.refillRunning = true;
+
+    try {
+      while (state.feedSourceIndex < state.feedSources.length) {
+        const source = currentFeedSource();
+        if (!source) break;
+
+        setStatus(
+          "Refilling from " + source.name,
+          "Opening " + source.name + " and taking " + ITEM.name + ".",
+          "busy"
+        );
+
+        window.parent.postMessage({
+          type: "sendCommand",
+          command: trunkCommand(source)
+        }, "*");
+
+        await waitFor(
+          () => state.cache.menu_open === true && Boolean(choiceByText("Take")),
+          1800
+        );
+
+        const take = choiceByText("Take");
+        if (!take) throw new Error("Take was not found in " + source.name);
+        await submitChoice(take, 0);
+
+        // Give TT a brief moment to populate the trunk item list. If Food
+        // Shipment is absent, this source is considered empty and we switch.
+        try {
+          await waitFor(() => Boolean(itemChoice()), 350);
+        } catch {}
+
+        const food = itemChoice();
+
+        if (!food) {
+          await closeCurrentMenu();
+          state.feedSourceIndex += 1;
+
+          if (state.feedSourceIndex < state.feedSources.length) {
+            const next = currentFeedSource();
+            setStatus(
+              source.name + " empty",
+              "Switching to " + next.name + ".",
+              "busy"
+            );
+            await sleep(30);
+            continue;
+          }
+
+          state.feedActive = false;
+          setStatus(
+            "Food Shipments exhausted",
+            "All configured trunks are empty.",
+            "ok"
+          );
+          notify("All configured Food Shipment trunks are empty.");
+          return;
+        }
+
+        await submitChoice(food, -1);
+        await closeCurrentMenu();
+
+        setStatus(
+          "Refilled from " + source.name,
+          "Press E/use at Roxwood Loft again. Hammy BXP will Feed the Hunters automatically.",
+          "ok"
+        );
+        return;
+      }
+    } catch (error) {
+      console.error("[Hammy BXP feed refill]", error);
+      state.feedActive = false;
+      setStatus("Refill stopped", error?.message ?? String(error), "error");
+      notify("Refill error: " + (error?.message ?? error));
+    } finally {
+      state.refillRunning = false;
+      $("loadNow").disabled = false;
+      render();
+    }
+  }
+
+  async function feedHunters() {
+    if (!state.feedActive || state.running || state.refillRunning || !isFeedMenu()) return;
+
+    state.running = true;
+    $("loadNow").disabled = true;
+
+    try {
+      const source = currentFeedSource();
+      setStatus(
+        "Feeding the Hunters",
+        "Using " + (source?.name ?? "configured trunk") + " as the current refill source.",
+        "busy"
+      );
+
+      const feed = choiceByText("Feed the Hunters");
+      if (!feed) throw new Error("Feed the Hunters was not found");
+      await submitChoice(feed, 0);
+
+      // The recipe closes Roxwood Loft after each craft. Refill immediately
+      // from the same trunk; when that trunk has no Food Shipment left,
+      // refillFromCurrentSource() advances to the next configured trunk.
+      try {
+        await waitFor(() => state.cache.menu_open === false, 900);
+      } catch {}
+
+      state.running = false;
+      $("loadNow").disabled = false;
+      await refillFromCurrentSource();
+    } catch (error) {
+      console.error("[Hammy BXP feed]", error);
+      state.feedActive = false;
+      setStatus("Feed stopped", error?.message ?? String(error), "error");
+      notify("Feed error: " + (error?.message ?? error));
+    } finally {
+      state.running = false;
+      $("loadNow").disabled = false;
+      render();
+    }
+  }
+
+  function startFeedSession() {
+    const sources = selectedTargets();
+    if (!sources.length) {
+      setStatus("No trunks selected", "Choose a trailer and/or enable MK15.", "error");
+      return false;
+    }
+
+    state.feedSources = sources;
+    state.feedSourceIndex = 0;
+    state.feedActive = true;
+
+    setStatus(
+      "Hunter feed ready",
+      "Current source: " + sources[0].name + ".",
+      "ok"
+    );
+
+    return true;
+  }
+
   function setupDrag() {
     const app = $("app");
     const handle = $("dragHandle");
@@ -550,7 +727,16 @@
       Object.prototype.hasOwnProperty.call(data, TRIGGER_KEY) &&
       data[TRIGGER_KEY] !== previousTrigger
     ) {
-      armSequence();
+      if (isFeedMenu()) {
+        if (!state.feedActive) startFeedSession();
+        feedHunters();
+      } else {
+        armSequence();
+      }
+    }
+
+    if (state.feedActive && !state.running && !state.refillRunning && isFeedMenu()) {
+      feedHunters();
     }
 
     if (state.sequenceActive && !state.running) {
