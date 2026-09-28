@@ -635,15 +635,23 @@
   async function feedHunters() {
     if (!state.feedActive || state.running || state.refillRunning || !isFeedMenu()) return;
 
+    const source = currentFeedSource();
+    if (!source) return;
+
+    const amountBefore = foodAmountInTarget(source);
+    if (amountBefore != null && amountBefore < 10) {
+      advanceFeedSource();
+      return;
+    }
+
     state.running = true;
     $("loadNow").disabled = true;
 
     try {
-      const source = currentFeedSource();
-
       setStatus(
         "Feeding the Hunters",
-        "Current trunk source: " + (source?.name ?? "none") + ".",
+        "Current trunk source: " + source.name +
+          (amountBefore == null ? "." : " · " + amountBefore.toLocaleString() + " Food Shipments remaining."),
         "busy"
       );
 
