@@ -165,16 +165,10 @@
     await sleep(120);
   }
 
-  async function backToStorageRoot() {
-    for (let i = 0; i < 4; i++) {
-      if (choiceByText("Take to Trunk")) return true;
-      if (state.cache.menu_open !== true) break;
-
-      window.parent.postMessage({ type: "forceMenuBack" }, "*");
-      await sleep(180);
-    }
-
-    return Boolean(choiceByText("Take to Trunk"));
+  function menuHasAnyDestination(destinations) {
+    return destinations.some(destination =>
+      choices().some(row => clean(row?.[0]) === destination.text)
+    );
   }
 
   function destinationChoices() {
@@ -194,34 +188,55 @@
       .filter(row => !/inventory|backpack/i.test(row.text));
   }
 
-  async function discoverDestinations() {
+  async function openDestinationMenu() {
     const takeToTrunk = choiceByText("Take to Trunk");
     if (!takeToTrunk) throw new Error("Take to Trunk was not found");
 
     await submitChoice(takeToTrunk, 0);
 
+    await waitFor(
+      () => destinationChoices().length > 0 || Boolean(itemChoice()),
+      3500
+    );
+
+    // Some setups can skip the vehicle picker when only one trunk exists.
     if (itemChoice()) {
-      // TT skipped the destination menu. Treat it as one implicit trunk.
-      state.destinations = [{ raw: null, text: "Current Trunk" }];
-      return state.destinations;
+      return [{ raw: null, text: "Current Trunk" }];
     }
 
-    await waitFor(() => destinationChoices().length > 0 || Boolean(itemChoice()), 3500);
-
-    if (itemChoice()) {
-      state.destinations = [{ raw: null, text: "Current Trunk" }];
-    } else {
-      state.destinations = destinationChoices();
-    }
-
-    await backToStorageRoot();
-    render();
-    return state.destinations;
+    const destinations = destinationChoices();
+    if (!destinations.length) throw new Error("No available trunks were found");
+    return destinations;
   }
 
-  async function loadDestination(destination, index, total) {
-    if (!(await backToStorageRoot())) {
-      throw new Error("Self Storage root menu was lost");
+  async function ensureDestinationMenu(destinations) {
+    if (destinations.length === 1 && destinations[0].raw == null && itemChoice()) {
+      return true;
+    }
+
+    for (let attempt = 0; attempt < 6; attempt++) {
+      if (menuHasAnyDestination(destinations)) return true;
+
+      if (choiceByText("Take to Trunk")) {
+        await submitChoice(choiceByText("Take to Trunk"), 0);
+        try {
+          await waitFor(() => menuHasAnyDestination(destinations) || Boolean(itemChoice()), 2200);
+        } catch {}
+        if (menuHasAnyDestination(destinations) || Boolean(itemChoice())) return true;
+      }
+
+      if (state.cache.menu_open !== true) break;
+
+      window.parent.postMessage({ type: "forceMenuBack" }, "*");
+      await sleep(180);
+    }
+
+    return menuHasAnyDestination(destinations);
+  }
+
+  async function loadDestination(destination, index, total, destinations) {
+    if (!(await ensureDestinationMenu(destinations))) {
+      throw new Error("Could not return to the trunk selection menu");
     }
 
     setStatus(
@@ -230,15 +245,7 @@
       "busy"
     );
 
-    const takeToTrunk = choiceByText("Take to Trunk");
-    await submitChoice(takeToTrunk, 0);
-
     if (destination.raw != null) {
-      await waitFor(
-        () => choices().some(row => clean(row?.[0]) === destination.text),
-        3000
-      );
-
       const currentDestination =
         choices().find(row => clean(row?.[0]) === destination.text)?.[0];
 
@@ -254,11 +261,9 @@
     const food = itemChoice();
     if (!food) throw new Error(ITEM.name + " was not found");
 
-    // This is the same max-transfer behavior used by Doggo's NUI Take action.
+    // Same max-transfer behavior Doggo's uses for NUI Take.
     await submitChoice(food, -1);
-    await sleep(300);
-    window.parent.postMessage({ type: "getData" }, "*");
-    await sleep(180);
+    await sleep(260);
   }
 
   async function loadTrunks(source = "keybind") {
@@ -276,15 +281,21 @@
     try {
       setStatus("Scanning trunks", "Reading available Take to Trunk destinations…", "busy");
 
-      const destinations = await discoverDestinations();
-      if (!destinations.length) throw new Error("No available trunks were found");
+      const destinations = await openDestinationMenu();
+      state.destinations = destinations;
+      render();
 
       for (let i = 0; i < destinations.length; i++) {
-        await loadDestination(destinations[i], i, destinations.length);
+        await loadDestination(destinations[i], i, destinations.length, destinations);
       }
 
-      await backToStorageRoot();
-      window.parent.postMessage({ type: "getData" }, "*");
+      // Leave the player back at Self Storage if the menu is still open.
+      if (state.cache.menu_open === true) {
+        for (let i = 0; i < 4 && !choiceByText("Take to Trunk"); i++) {
+          window.parent.postMessage({ type: "forceMenuBack" }, "*");
+          await sleep(140);
+        }
+      }
 
       setStatus(
         "Trunks loaded",
@@ -300,10 +311,7 @@
     } finally {
       state.running = false;
       $("loadNow").disabled = false;
-      setTimeout(() => {
-        window.parent.postMessage({ type: "getData" }, "*");
-        render();
-      }, 900);
+      setTimeout(render, 500);
     }
   }
 
@@ -391,6 +399,8 @@
   setupDrag();
 
   setTimeout(() => {
+    // One initial hydration only. After this, the app watches TT's pushed data
+    // events instead of polling getData.
     window.parent.postMessage({ type: "getData" }, "*");
     window.parent.postMessage({
       type: "registerTrigger",
@@ -403,7 +413,4 @@
     state.keybindsEnabled = true;
   }, 2000);
 
-  setInterval(() => {
-    window.parent.postMessage({ type: "getData" }, "*");
-  }, 2500);
 })();
