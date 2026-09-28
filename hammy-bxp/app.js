@@ -524,6 +524,23 @@
     return state.feedSources[state.feedSourceIndex] ?? null;
   }
 
+  function chestKeyForTarget(target) {
+    const userId = state.cache.user_id;
+    if (!userId || !target?.id) return null;
+    return target.id === "mk15"
+      ? "chest_u" + userId + "veh_cab_" + target.id
+      : "chest_u" + userId + "veh_trailer_" + target.id;
+  }
+
+  function foodAmountInTarget(target) {
+    const key = chestKeyForTarget(target);
+    if (!key) return null;
+    const chest = state.cache[key];
+    if (!chest || typeof chest !== "object") return null;
+    const amount = Number(chest?.[ITEM.id]?.amount ?? 0);
+    return Number.isFinite(amount) ? amount : null;
+  }
+
   function trunkCommand(target) {
     return target?.id === "mk15" ? "rm_cabtrunk" : "rm_trunk";
   }
