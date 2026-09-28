@@ -547,7 +547,7 @@
 
   const HUNT_EXP = {
     id: "exp_token_a|hunting|skill",
-    name: "Bonus EXP (Hunting)"
+    names: ["EXP Token (Hunting)", "Bonus EXP (Hunting)"]
   };
 
   function huntingExpAmountInTarget(target) {
@@ -560,9 +560,14 @@
   }
 
   function huntingExpChoice() {
-    return choices().find(row =>
-      clean(row?.[0]).toLowerCase() === HUNT_EXP.name.toLowerCase()
-    )?.[0] ?? null;
+    return choices().find(row => {
+      const raw = String(row?.[0] ?? "");
+      const text = clean(raw).toLowerCase();
+
+      if (HUNT_EXP.names.some(name => text === name.toLowerCase())) return true;
+
+      return /type=['"]hunting-skill['"]/i.test(raw);
+    })?.[0] ?? null;
   }
 
   async function dumpHuntingExpFromSource(source) {
