@@ -61,6 +61,7 @@
     settings: {
       dumpBeforeTake: false,
       useMk15: true,
+      dumpExpToInventory: false,
       trailer: "trailerlarge"
     }
   };
@@ -140,6 +141,7 @@
       if (saved && typeof saved === "object") {
         if (typeof saved.dumpBeforeTake === "boolean") state.settings.dumpBeforeTake = saved.dumpBeforeTake;
         if (typeof saved.useMk15 === "boolean") state.settings.useMk15 = saved.useMk15;
+        if (typeof saved.dumpExpToInventory === "boolean") state.settings.dumpExpToInventory = saved.dumpExpToInventory;
         if (typeof saved.trailer === "string" && (saved.trailer === "" || TRAILERS[saved.trailer])) {
           state.settings.trailer = saved.trailer;
         }
@@ -148,6 +150,7 @@
 
     $("dumpBeforeTake").checked = state.settings.dumpBeforeTake;
     $("useMk15").checked = state.settings.useMk15;
+    $("dumpExpToInventory").checked = state.settings.dumpExpToInventory;
     $("trailerSelect").value = state.settings.trailer;
   }
 
@@ -543,6 +546,66 @@
     return Number.isFinite(amount) ? amount : null;
   }
 
+  const HUNT_EXP = {
+    id: "exp_token_a|hunting|skill",
+    name: "Bonus EXP (Hunting)"
+  };
+
+  function huntingExpAmountInTarget(target) {
+    const key = chestKeyForTarget(target);
+    if (!key) return null;
+    const chest = state.cache[key];
+    if (!chest || typeof chest !== "object") return null;
+    const amount = Number(chest?.[HUNT_EXP.id]?.amount ?? 0);
+    return Number.isFinite(amount) ? amount : null;
+  }
+
+  function huntingExpChoice() {
+    return choices().find(row =>
+      clean(row?.[0]).toLowerCase() === HUNT_EXP.name.toLowerCase()
+    )?.[0] ?? null;
+  }
+
+  async function dumpHuntingExpFromSource(source) {
+    if (!state.settings.dumpExpToInventory || !source) return;
+
+    const knownAmount = huntingExpAmountInTarget(source);
+    if (knownAmount === 0) return;
+
+    await closeCurrentMenu();
+
+    setStatus(
+      "Collecting Hunting EXP",
+      "Opening " + source.name + " to move Hunting EXP into inventory.",
+      "busy"
+    );
+
+    window.parent.postMessage({
+      type: "sendCommand",
+      command: trunkCommand(source)
+    }, "*");
+
+    await waitFor(
+      () => state.cache.menu_open === true && Boolean(choiceByText("Take")),
+      1600
+    );
+
+    const take = choiceByText("Take");
+    if (!take) throw new Error("Take was not found in " + source.name);
+    await submitChoice(take, 0);
+
+    try {
+      await waitFor(() => Boolean(huntingExpChoice()), 700);
+    } catch {}
+
+    const exp = huntingExpChoice();
+    if (exp) {
+      await submitChoice(exp, -1);
+    }
+
+    await closeCurrentMenu();
+  }
+
   function trunkCommand(target) {
     return target?.id === "mk15" ? "rm_cabtrunk" : "rm_trunk";
   }
@@ -608,6 +671,14 @@
   }
 
   async function advanceFeedSource() {
+    const exhaustedSource = currentFeedSource();
+
+    try {
+      await dumpHuntingExpFromSource(exhaustedSource);
+    } catch (error) {
+      console.warn("[Hammy BXP EXP dump]", error);
+    }
+
     await closeCurrentMenu();
     state.feedSourceIndex += 1;
 
@@ -893,6 +964,12 @@
 
   $("useMk15").addEventListener("change", event => {
     state.settings.useMk15 = event.target.checked;
+    saveSettings();
+    render();
+  });
+
+  $("dumpExpToInventory").addEventListener("change", event => {
+    state.settings.dumpExpToInventory = event.target.checked;
     saveSettings();
     render();
   });
