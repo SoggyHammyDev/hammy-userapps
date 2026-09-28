@@ -747,15 +747,11 @@
       Object.prototype.hasOwnProperty.call(data, TRIGGER_KEY) &&
       data[TRIGGER_KEY] !== previousTrigger
     ) {
-      if (isFeedMenu()) {
-        if (!state.feedActive) startFeedSession();
-        feedHunters();
-      } else {
-        armSequence();
-      }
+      armSequence();
     }
 
-    if (state.feedActive && !state.running && !state.refillRunning && isFeedMenu()) {
+    if (!state.running && !state.refillRunning && isFeedMenu()) {
+      if (!state.feedActive) startFeedSession();
       feedHunters();
     }
 
