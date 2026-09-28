@@ -615,7 +615,7 @@
       const next = currentFeedSource();
       const amount = foodAmountInTarget(next);
 
-      if (amount == null || amount >= 10) {
+      if (amount != null && amount >= 10) {
         setStatus(
           "Switching trunks",
           "Opening " + next.name + " as the next Food Shipment source.",
@@ -623,6 +623,15 @@
         );
         await openCurrentFeedSource();
         return true;
+      }
+
+      if (amount == null) {
+        setStatus(
+          "Waiting for " + next.name,
+          "Waiting for TT to publish this trunk's Food Shipment count.",
+          "busy"
+        );
+        return false;
       }
 
       state.feedSourceIndex += 1;
@@ -698,14 +707,23 @@
       const source = currentFeedSource();
       const amount = foodAmountInTarget(source);
 
-      if (amount == null || amount >= 10) {
+      if (amount != null && amount >= 10) {
         setStatus(
           "Hunter feed ready",
-          "Opening " + source.name + " as the first Food Shipment source.",
+          "Opening " + source.name + " with " + amount.toLocaleString() + " Food Shipments.",
           "ok"
         );
         await openCurrentFeedSource();
         return true;
+      }
+
+      if (amount == null) {
+        setStatus(
+          "Reading " + source.name,
+          "Waiting for TT to publish this trunk's Food Shipment count.",
+          "busy"
+        );
+        return false;
       }
 
       state.feedSourceIndex += 1;
@@ -781,6 +799,27 @@
     for (const [key, value] of Object.entries(data)) {
       if (key === "menu_choices") state.cache[key] = parseChoices(value);
       else state.cache[key] = value;
+    }
+
+    const chestUpdateForFeed = Object.keys(data).some(key =>
+      key.startsWith("chest_u") && (key.includes("veh_trailer_") || key.includes("veh_cab_"))
+    );
+
+    if (
+      chestUpdateForFeed &&
+      state.feedActive &&
+      !state.running &&
+      !state.refillRunning &&
+      isFeedMenu()
+    ) {
+      const source = currentFeedSource();
+      const amount = foodAmountInTarget(source);
+
+      if (amount != null && amount < 10) {
+        advanceFeedSource();
+      } else if (amount != null && amount >= 10) {
+        openCurrentFeedSource();
+      }
     }
 
     if (Object.prototype.hasOwnProperty.call(data, "notification")) {
