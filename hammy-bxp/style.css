@@ -97,3 +97,45 @@ select{
 #loadNow:disabled{opacity:.45;cursor:not-allowed}
 .hint{margin-top:8px;text-align:center;color:var(--muted);font-size:7px}
 .hint strong{color:#cdeeff}
+
+.settings-card{
+  margin-bottom:8px;
+  padding:4px 9px;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:10px;
+}
+.check-row,.trailer-row{
+  min-height:42px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.check-row+.check-row,.trailer-row{
+  border-top:1px solid rgba(255,255,255,.06);
+}
+.check-row{cursor:pointer}
+.check-row>span,.trailer-row>div{min-width:0}
+.check-row strong,.trailer-row strong{
+  display:block;
+  font-size:8px;
+  font-weight:850;
+}
+.check-row small,.trailer-row small{
+  display:block;
+  margin-top:2px;
+  color:var(--muted);
+  font-size:7px;
+}
+.check-row input{
+  width:15px;
+  height:15px;
+  flex:none;
+  accent-color:var(--cyan);
+}
+.trailer-row select{
+  width:154px;
+  min-width:154px;
+  font-size:8px;
+}
