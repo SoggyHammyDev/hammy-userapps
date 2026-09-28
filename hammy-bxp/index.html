@@ -14,7 +14,7 @@
       <div class="brand">
         <div class="icon">⚡</div>
         <div>
-          <div class="title">Hammy BXP <span>v0.4</span></div>
+          <div class="title">Hammy BXP <span>v0.5</span></div>
           <div class="subtitle">Trunk Loader</div>
         </div>
       </div>
@@ -28,6 +28,47 @@
           <option value="hunting">Hunting</option>
         </select>
       </div>
+
+      <section class="settings-card">
+        <label class="check-row">
+          <span>
+            <strong>Dump trunk(s) before take</strong>
+            <small>Empty each selected trunk into storage first.</small>
+          </span>
+          <input id="dumpBeforeTake" type="checkbox">
+        </label>
+
+        <label class="check-row">
+          <span>
+            <strong>Using MK15</strong>
+            <small>Also load the Chernobog Toter cab.</small>
+          </span>
+          <input id="useMk15" type="checkbox" checked>
+        </label>
+
+        <div class="trailer-row">
+          <div>
+            <strong>Trailer</strong>
+            <small>Doggos trailer legend</small>
+          </div>
+          <select id="trailerSelect">
+            <option value="">None</option>
+            <option value="trailerswb">MK1</option>
+            <option value="trailerlogs2">MK3</option>
+            <option value="botdumptr">MK4</option>
+            <option value="drybulktr">MK5</option>
+            <option value="dumptr">MK6</option>
+            <option value="docktrailer2">MK7</option>
+            <option value="docktrailer">MK8</option>
+            <option value="trailers2">MK9</option>
+            <option value="trailerswb2">MK10 · Refrigerated Trailer</option>
+            <option value="tvtrailer">MK11</option>
+            <option value="tvtrailer2">MK12</option>
+            <option value="boxlongtr">MK13 · Box Trailer</option>
+            <option value="trailerlarge" selected>MK14 · Mobile Operations Center</option>
+          </select>
+        </div>
+      </section>
 
       <div class="cargo">
         <div>
@@ -43,7 +84,7 @@
           <strong id="storageAmount">—</strong>
         </div>
         <div>
-          <span>Detected Trunks</span>
+          <span>Load Progress</span>
           <strong id="trunkCount">—</strong>
         </div>
       </div>
