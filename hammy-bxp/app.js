@@ -75,9 +75,11 @@
     let total = 0;
     let found = false;
 
+    // Best source: the actual self-storage chest payload when TT has supplied it.
     for (const [key, value] of Object.entries(state.cache)) {
       if (!key.startsWith("chest_self_storage")) continue;
       if (!value || typeof value !== "object") continue;
+
       const amount = Number(value?.[ITEM.id]?.amount);
       if (Number.isFinite(amount)) {
         total += amount;
@@ -85,15 +87,29 @@
       }
     }
 
-    if (!found && state.cache.chest && typeof state.cache.chest === "object") {
-      const amount = Number(state.cache.chest?.[ITEM.id]?.amount);
-      if (Number.isFinite(amount)) {
-        total = amount;
-        found = true;
+    // Live fallback: when Self Storage is open, the menu row itself contains
+    // "(637×)" in the description, so we can read the count without polling.
+    if (!found) {
+      const itemRow = choices().find(row =>
+        clean(row?.[0]).toLowerCase() === ITEM.name.toLowerCase()
+      );
+
+      if (itemRow) {
+        const description = clean(itemRow?.[1]);
+        const match = description.match(/\(([\d\s,]+)[×x]\)/i);
+
+        if (match) {
+          const amount = Number(match[1].replace(/[\s,]/g, ""));
+          if (Number.isFinite(amount)) {
+            total = amount;
+            found = true;
+          }
+        }
       }
     }
 
-    state.storageAmount = found ? total : null;
+    // Keep the last known value after the menu closes instead of flashing back to —.
+    if (found) state.storageAmount = total;
   }
 
   function isStorageRoot() {
