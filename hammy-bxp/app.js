@@ -810,9 +810,34 @@
 
       await submitChoice(feed, 0);
 
+      // Give TT a moment to publish the updated trunk chest after the sale.
+      if (amountBefore != null) {
+        try {
+          await waitFor(() => {
+            const now = foodAmountInTarget(source);
+            return now != null && now !== amountBefore;
+          }, 450);
+        } catch {}
+      } else {
+        await sleep(40);
+      }
+
+      const amountAfter = foodAmountInTarget(source);
+
+      if (amountAfter != null && amountAfter < 10) {
+        await advanceFeedSource();
+        return;
+      }
+
+      // Keep the active source open between sales so Roxwood can consume
+      // directly from that trunk on the next Feed the Hunters action.
+      await openCurrentFeedSource();
+
       setStatus(
-        "Feed attempted",
-        "If the trunk still has Food Shipments, open Feed the Hunters again. If TT reports Not enough items, Hammy BXP will switch trunks.",
+        source.name + " open",
+        amountAfter == null
+          ? "Ready for the next Feed the Hunters sale."
+          : amountAfter.toLocaleString() + " Food Shipments remaining.",
         "ok"
       );
     } catch (error) {
