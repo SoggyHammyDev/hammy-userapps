@@ -607,29 +607,35 @@
     }
   }
 
-  function advanceFeedSource() {
+  async function advanceFeedSource() {
+    await closeCurrentMenu();
     state.feedSourceIndex += 1;
 
-    const next = currentFeedSource();
-    if (!next) {
-      state.feedActive = false;
-      setStatus(
-        "Food Shipments exhausted",
-        "All configured trunks have been exhausted.",
-        "ok"
-      );
-      notify("All configured Food Shipment trunks are empty.");
-      return false;
+    while (state.feedSourceIndex < state.feedSources.length) {
+      const next = currentFeedSource();
+      const amount = foodAmountInTarget(next);
+
+      if (amount == null || amount >= 10) {
+        setStatus(
+          "Switching trunks",
+          "Opening " + next.name + " as the next Food Shipment source.",
+          "busy"
+        );
+        await openCurrentFeedSource();
+        return true;
+      }
+
+      state.feedSourceIndex += 1;
     }
 
+    state.feedActive = false;
     setStatus(
-      "Switching trunks",
-      "Opening " + next.name + " as the next Food Shipment source.",
-      "busy"
+      "Food Shipments exhausted",
+      "All configured trunks have fewer than 10 Food Shipments remaining.",
+      "ok"
     );
-
-    openCurrentFeedSource();
-    return true;
+    notify("All configured Food Shipment trunks are below the recipe minimum.");
+    return false;
   }
 
   async function feedHunters() {
@@ -640,7 +646,7 @@
 
     const amountBefore = foodAmountInTarget(source);
     if (amountBefore != null && amountBefore < 10) {
-      advanceFeedSource();
+      await advanceFeedSource();
       return;
     }
 
@@ -677,7 +683,7 @@
     }
   }
 
-  function startFeedSession() {
+  async function startFeedSession() {
     const sources = selectedTargets();
     if (!sources.length) {
       setStatus("No trunks selected", "Choose a trailer and/or enable MK15.", "error");
@@ -688,14 +694,30 @@
     state.feedSourceIndex = 0;
     state.feedActive = true;
 
-    setStatus(
-      "Hunter feed ready",
-      "Opening " + sources[0].name + " as the first Food Shipment source.",
-      "ok"
-    );
+    while (state.feedSourceIndex < state.feedSources.length) {
+      const source = currentFeedSource();
+      const amount = foodAmountInTarget(source);
 
-    openCurrentFeedSource();
-    return true;
+      if (amount == null || amount >= 10) {
+        setStatus(
+          "Hunter feed ready",
+          "Opening " + source.name + " as the first Food Shipment source.",
+          "ok"
+        );
+        await openCurrentFeedSource();
+        return true;
+      }
+
+      state.feedSourceIndex += 1;
+    }
+
+    state.feedActive = false;
+    setStatus(
+      "No usable Food Shipments",
+      "Every configured trunk has fewer than 10 Food Shipments.",
+      "error"
+    );
+    return false;
   }
 
   function setupDrag() {
@@ -786,8 +808,11 @@
     }
 
     if (!state.running && !state.refillRunning && isFeedMenu()) {
-      if (!state.feedActive) startFeedSession();
-      feedHunters();
+      if (!state.feedActive) {
+        startFeedSession();
+      } else {
+        feedHunters();
+      }
     }
 
     if (state.sequenceActive && !state.running) {
