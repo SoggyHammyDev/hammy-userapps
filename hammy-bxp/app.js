@@ -230,6 +230,14 @@
     const configured = selectedTargets();
     if (!configured.length) return "No trunks selected";
 
+    if (state.feedActive) {
+      return state.feedSources.map((target, index) => {
+        if (index < state.feedSourceIndex) return target.name + " ✓";
+        if (index === state.feedSourceIndex) return target.name + " · feeding";
+        return target.name;
+      }).join(" → ");
+    }
+
     if (!state.sequenceActive) {
       return configured.map(target => target.name).join(" → ");
     }
@@ -256,6 +264,18 @@
     $("trunkCount").textContent = progressText();
 
     if (state.running) return;
+
+    if (state.feedActive) {
+      const source = currentFeedSource();
+      setStatus(
+        "Hunter feeding armed",
+        source
+          ? "Current refill source: " + source.name + ". Open Feed the Hunters with E/use."
+          : "Waiting for the next configured trunk.",
+        "ok"
+      );
+      return;
+    }
 
     if (state.sequenceActive) {
       const target = state.targets[state.step];
