@@ -233,9 +233,11 @@
 
     if (state.feedActive) {
       return state.feedSources.map((target, index) => {
+        const amount = foodAmountInTarget(target);
+        const suffix = amount == null ? "" : " (" + amount.toLocaleString() + ")";
         if (index < state.feedSourceIndex) return target.name + " ✓";
-        if (index === state.feedSourceIndex) return target.name + " · feeding";
-        return target.name;
+        if (index === state.feedSourceIndex) return target.name + suffix + " · feeding";
+        return target.name + suffix;
       }).join(" → ");
     }
 
