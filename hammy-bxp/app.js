@@ -57,6 +57,7 @@
     feedSources: [],
     feedSourceIndex: 0,
     refillRunning: false,
+    lastNotification: null,
     settings: {
       dumpBeforeTake: false,
       useMk15: true,
@@ -534,89 +535,82 @@
     }
   }
 
-  async function refillFromCurrentSource() {
+  async function openCurrentFeedSource() {
     if (!state.feedActive || state.refillRunning) return;
 
     state.refillRunning = true;
 
     try {
-      while (state.feedSourceIndex < state.feedSources.length) {
-        const source = currentFeedSource();
-        if (!source) break;
+      const source = currentFeedSource();
 
+      if (!source) {
+        state.feedActive = false;
         setStatus(
-          "Refilling from " + source.name,
-          "Opening " + source.name + " and taking " + ITEM.name + ".",
-          "busy"
-        );
-
-        window.parent.postMessage({
-          type: "sendCommand",
-          command: trunkCommand(source)
-        }, "*");
-
-        await waitFor(
-          () => state.cache.menu_open === true && Boolean(choiceByText("Take")),
-          1800
-        );
-
-        const take = choiceByText("Take");
-        if (!take) throw new Error("Take was not found in " + source.name);
-        await submitChoice(take, 0);
-
-        // Give TT a brief moment to populate the trunk item list. If Food
-        // Shipment is absent, this source is considered empty and we switch.
-        try {
-          await waitFor(() => Boolean(itemChoice()), 350);
-        } catch {}
-
-        const food = itemChoice();
-
-        if (!food) {
-          await closeCurrentMenu();
-          state.feedSourceIndex += 1;
-
-          if (state.feedSourceIndex < state.feedSources.length) {
-            const next = currentFeedSource();
-            setStatus(
-              source.name + " empty",
-              "Switching to " + next.name + ".",
-              "busy"
-            );
-            await sleep(30);
-            continue;
-          }
-
-          state.feedActive = false;
-          setStatus(
-            "Food Shipments exhausted",
-            "All configured trunks are empty.",
-            "ok"
-          );
-          notify("All configured Food Shipment trunks are empty.");
-          return;
-        }
-
-        await submitChoice(food, -1);
-        await closeCurrentMenu();
-
-        setStatus(
-          "Refilled from " + source.name,
-          "Press E/use at Roxwood Loft again. Hammy BXP will Feed the Hunters automatically.",
+          "Food Shipments exhausted",
+          "All configured trunks have been tried.",
           "ok"
         );
+        notify("All configured Food Shipment trunks have been exhausted.");
         return;
       }
+
+      setStatus(
+        "Opening " + source.name,
+        "Leaving " + source.name + " open so Roxwood can consume directly from it.",
+        "busy"
+      );
+
+      // Important: DO NOT Take the item out of the trunk here.
+      // TT recipes can consume directly from an open vehicle trunk.
+      window.parent.postMessage({
+        type: "sendCommand",
+        command: trunkCommand(source)
+      }, "*");
+
+      try {
+        await waitFor(() => state.cache.menu_open === true, 1200);
+      } catch {}
+
+      setStatus(
+        source.name + " open",
+        "Leave this trunk open. Open Feed the Hunters again and Hammy BXP will keep crafting from it.",
+        "ok"
+      );
     } catch (error) {
-      console.error("[Hammy BXP feed refill]", error);
+      console.error("[Hammy BXP trunk open]", error);
       state.feedActive = false;
-      setStatus("Refill stopped", error?.message ?? String(error), "error");
-      notify("Refill error: " + (error?.message ?? error));
+      setStatus("Trunk open failed", error?.message ?? String(error), "error");
+      notify("Trunk open error: " + (error?.message ?? error));
     } finally {
       state.refillRunning = false;
       $("loadNow").disabled = false;
       render();
     }
+  }
+
+  function advanceFeedSource() {
+    state.feedSourceIndex += 1;
+
+    const next = currentFeedSource();
+    if (!next) {
+      state.feedActive = false;
+      setStatus(
+        "Food Shipments exhausted",
+        "All configured trunks have been exhausted.",
+        "ok"
+      );
+      notify("All configured Food Shipment trunks are empty.");
+      return false;
+    }
+
+    setStatus(
+      "Switching trunks",
+      "Opening " + next.name + " as the next Food Shipment source.",
+      "busy"
+    );
+
+    openCurrentFeedSource();
+    return true;
   }
 
   async function feedHunters() {
@@ -627,26 +621,23 @@
 
     try {
       const source = currentFeedSource();
+
       setStatus(
         "Feeding the Hunters",
-        "Using " + (source?.name ?? "configured trunk") + " as the current refill source.",
+        "Current trunk source: " + (source?.name ?? "none") + ".",
         "busy"
       );
 
       const feed = choiceByText("Feed the Hunters");
       if (!feed) throw new Error("Feed the Hunters was not found");
+
       await submitChoice(feed, 0);
 
-      // The recipe closes Roxwood Loft after each craft. Refill immediately
-      // from the same trunk; when that trunk has no Food Shipment left,
-      // refillFromCurrentSource() advances to the next configured trunk.
-      try {
-        await waitFor(() => state.cache.menu_open === false, 900);
-      } catch {}
-
-      state.running = false;
-      $("loadNow").disabled = false;
-      await refillFromCurrentSource();
+      setStatus(
+        "Feed attempted",
+        "If the trunk still has Food Shipments, open Feed the Hunters again. If TT reports Not enough items, Hammy BXP will switch trunks.",
+        "ok"
+      );
     } catch (error) {
       console.error("[Hammy BXP feed]", error);
       state.feedActive = false;
@@ -672,10 +663,11 @@
 
     setStatus(
       "Hunter feed ready",
-      "Current source: " + sources[0].name + ".",
+      "Opening " + sources[0].name + " as the first Food Shipment source.",
       "ok"
     );
 
+    openCurrentFeedSource();
     return true;
   }
 
@@ -740,6 +732,22 @@
     for (const [key, value] of Object.entries(data)) {
       if (key === "menu_choices") state.cache[key] = parseChoices(value);
       else state.cache[key] = value;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(data, "notification")) {
+      const note = clean(data.notification);
+      const changed = note !== state.lastNotification;
+      state.lastNotification = note;
+
+      if (
+        changed &&
+        state.feedActive &&
+        note.toLowerCase() === "not enough items"
+      ) {
+        // The currently open trunk can no longer satisfy Feed the Hunters.
+        // Move to the next configured trunk and leave it open.
+        advanceFeedSource();
+      }
     }
 
     if (
