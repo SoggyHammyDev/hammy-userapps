@@ -6,6 +6,9 @@
   const POSITION_KEY = "hammyBxp.position.v1";
   const SETTINGS_KEY = "hammyBxp.settings.v1";
   const FIRST_MENU_WINDOW_MS = 3000;
+  const NUI_POLL_MS = 10;
+  const NUI_POST_DELAY_MS = 10;
+  const NUI_CHANGE_TIMEOUT_MS = 1100;
 
   const ITEM = {
     id: "fridge_store_delivery",
@@ -287,7 +290,7 @@
     );
   }
 
-  async function waitFor(test, timeout = 3500, interval = 60) {
+  async function waitFor(test, timeout = 3500, interval = NUI_POLL_MS) {
     const started = Date.now();
     while (Date.now() - started < timeout) {
       if (test()) return true;
@@ -308,8 +311,6 @@
       mod
     }, "*");
 
-    await sleep(90);
-
     try {
       await waitFor(
         () =>
@@ -317,11 +318,11 @@
           beforeOpen !== state.cache.menu_open ||
           beforePrompt !== state.cache.prompt ||
           beforeChoices !== JSON.stringify(choices()),
-        2200
+        NUI_CHANGE_TIMEOUT_MS
       );
     } catch {}
 
-    await sleep(90);
+    await sleep(NUI_POST_DELAY_MS);
   }
 
   function waitForUserReopen() {
@@ -340,13 +341,13 @@
     );
 
     await submitChoice(takeToTrunk, 0);
-    await waitFor(() => Boolean(targetChoice(target)), 3000);
+    await waitFor(() => Boolean(targetChoice(target)), 1800);
 
     const trunk = targetChoice(target);
     if (!trunk) throw new Error(target.name + " was not found in the trunk menu");
     await submitChoice(trunk, 0);
 
-    await waitFor(() => Boolean(itemChoice()), 3000);
+    await waitFor(() => Boolean(itemChoice()), 1800);
 
     const food = itemChoice();
     if (!food) throw new Error(ITEM.name + " was not found");
@@ -388,7 +389,7 @@
     );
 
     await submitChoice(dump, 0);
-    await waitFor(() => Boolean(targetChoice(target)), 3000);
+    await waitFor(() => Boolean(targetChoice(target)), 1800);
 
     const trunk = targetChoice(target);
     if (!trunk) throw new Error(target.name + " was not found in the dump menu");
@@ -397,7 +398,7 @@
     state.phase = "take";
 
     try {
-      await waitFor(() => isStorageRoot() || state.cache.menu_open === false, 900);
+      await waitFor(() => isStorageRoot() || state.cache.menu_open === false, 500);
     } catch {}
 
     if (isStorageRoot()) {
