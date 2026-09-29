@@ -94,7 +94,7 @@
       <div class="brand">
         <div class="icon">☰</div>
         <div>
-          <div class="title">Hammy Menu Styler <span>v0.3</span></div>
+          <div class="title">Hammy Menu Styler <span>v0.4</span></div>
           <div class="subtitle">TT HUD / Menu Diagnostics</div>
         </div>
       </div>
@@ -149,6 +149,7 @@
         <button id="testChatBtn" type="button" class="secondary">Test Chat / Input</button>
       </div>
 
+      <button id="scopeBtn" type="button" class="secondary full">Scope Test: Outline Reachable TT UI</button>
       <button id="resetBtn" type="button" class="danger full">Reset Injected CSS</button>
 
       <div class="hint">
@@ -288,6 +289,14 @@
         }
       `;
 
+      const SCOPE_TEST_CSS = `
+        html,body,body *,div,section,main,aside,nav,ul,ol,li,table,tr,td,
+        input,textarea,button{
+          outline:1px solid rgba(251,113,133,.9)!important;
+          outline-offset:-1px!important;
+        }
+      `;
+
       function setStatus(title, text, kind = "") {
         const box = $("status");
         box.className = "status" + (kind ? " " + kind : "");
@@ -380,6 +389,15 @@
           "chat-test",
           "Chat/Input test sent",
           "Keep chat open or focus the text box. Matching elements should glow amber for 5 seconds."
+        );
+      }
+
+      function testScope() {
+        temporaryTest(
+          SCOPE_TEST_CSS,
+          "scope-test",
+          "Scope test sent",
+          "Reachable TT UI should show red outlines for 5 seconds. Check Player List and chat specifically."
         );
       }
 
@@ -492,6 +510,7 @@
       $("testBtn").addEventListener("click", testInjection);
       $("testPlayersBtn").addEventListener("click", testPlayerList);
       $("testChatBtn").addEventListener("click", testChat);
+      $("scopeBtn").addEventListener("click", testScope);
       $("resetBtn").addEventListener("click", resetStyles);
 
       loadSettings();
