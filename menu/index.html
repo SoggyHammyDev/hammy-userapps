@@ -97,7 +97,7 @@
       <div class="brand">
         <div class="icon">☰</div>
         <div>
-          <div class="title">Hammy Menu Styler <span>v0.9</span></div>
+          <div class="title">Hammy Menu Styler <span>v0.10</span></div>
           <div class="subtitle">TT UI Theme</div>
         </div>
       </div>
@@ -440,17 +440,60 @@
         }
       }
 
+      let chatObserver = null;
+      let observedChatDoc = null;
+
+      function ensureChatObserver(doc) {
+        if (!doc) return;
+
+        if (observedChatDoc === doc && chatObserver) return;
+
+        try {
+          chatObserver?.disconnect();
+        } catch {}
+
+        observedChatDoc = doc;
+
+        try {
+          const root = doc.querySelector(".chat-messages") || doc.body;
+          if (!root) return;
+
+          chatObserver = new doc.defaultView.MutationObserver(() => {
+            fixDarkChatText(doc);
+          });
+
+          chatObserver.observe(root, {
+            childList: true,
+            subtree: true,
+            characterData: true,
+            attributes: true,
+            attributeFilter: ["style", "class"]
+          });
+        } catch {
+          chatObserver = null;
+          observedChatDoc = null;
+        }
+      }
+
       function applyFrameStyles() {
         const chatDoc = findFrameDocument(href => href.includes("nui://chat/"));
         const playerDoc = findFrameDocument(href => href.includes("nui://es_playerlist/"));
 
         injectFrameStyle(chatDoc, "hammy-chat-theme", CHAT_FRAME_CSS);
         injectFrameStyle(playerDoc, "hammy-playerlist-theme", PLAYERLIST_FRAME_CSS);
+
+        ensureChatObserver(chatDoc);
         fixDarkChatText(chatDoc);
         fixDarkPlayerNames(playerDoc);
       }
 
       function resetFrameStyles() {
+        try {
+          chatObserver?.disconnect();
+        } catch {}
+        chatObserver = null;
+        observedChatDoc = null;
+
         const chatDoc = findFrameDocument(href => href.includes("nui://chat/"));
         const playerDoc = findFrameDocument(href => href.includes("nui://es_playerlist/"));
 
