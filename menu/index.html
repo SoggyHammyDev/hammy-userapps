@@ -97,7 +97,7 @@
       <div class="brand">
         <div class="icon">☰</div>
         <div>
-          <div class="title">Hammy Menu Styler <span>v0.11</span></div>
+          <div class="title">Hammy Menu Styler <span>v0.12</span></div>
           <div class="subtitle">TT UI Theme</div>
         </div>
       </div>
@@ -315,7 +315,28 @@
         }
         .suggestion{margin-bottom:4px!important}
         .help,.disabled{color:var(--hammy-muted)!important}
-        .chat-btn{background:rgba(56,189,248,.10)!important;color:var(--hammy-text)!important}
+        .chat-btn{
+          background:rgba(255,255,255,.035)!important;
+          color:#c8d6e6!important;
+          border:1px solid transparent!important;
+          transition:background .12s ease,border-color .12s ease,color .12s ease,box-shadow .12s ease!important;
+        }
+        .chat-btn:hover{
+          background:rgba(56,189,248,.10)!important;
+          color:#eefaff!important;
+        }
+        .chat-btn.on,
+        .chat-btn.channelSelected,
+        .channelSelected{
+          background:rgba(56,189,248,.18)!important;
+          border-color:rgba(56,189,248,.34)!important;
+          color:#ffffff!important;
+          font-weight:900!important;
+          box-shadow:
+            inset 0 -2px 0 #38bdf8,
+            0 0 10px rgba(56,189,248,.16)!important;
+          text-shadow:0 0 8px rgba(56,189,248,.22)!important;
+        }
       `;
 
       const PLAYERLIST_FRAME_CSS = `
