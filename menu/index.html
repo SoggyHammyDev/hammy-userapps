@@ -97,7 +97,7 @@
       <div class="brand">
         <div class="icon">☰</div>
         <div>
-          <div class="title">Hammy Menu Styler <span>v0.8</span></div>
+          <div class="title">Hammy Menu Styler <span>v0.9</span></div>
           <div class="subtitle">TT UI Theme</div>
         </div>
       </div>
@@ -402,12 +402,51 @@
         }
       }
 
+      function fixDarkChatText(doc) {
+        if (!doc) return;
+
+        let candidates = [];
+        try {
+          candidates = Array.from(
+            doc.querySelectorAll(
+              ".chat-messages .msg *, .chat-messages .multiline *, .chat-messages span"
+            )
+          );
+        } catch {
+          return;
+        }
+
+        for (const el of candidates) {
+          try {
+            const text = (el.textContent || "").trim();
+            if (!text) continue;
+
+            const color = doc.defaultView.getComputedStyle(el).color;
+            const match = color.match(/rgba?\((\d+)\D+(\d+)\D+(\d+)/i);
+            if (!match) continue;
+
+            const r = Number(match[1]);
+            const g = Number(match[2]);
+            const b = Number(match[3]);
+            const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+            if (luminance < 75) {
+              el.style.setProperty("color", "#f4f8ff", "important");
+              el.style.setProperty("-webkit-text-fill-color", "#f4f8ff", "important");
+              el.style.setProperty("text-shadow", "none", "important");
+              el.dataset.hammyChatBrightened = "1";
+            }
+          } catch {}
+        }
+      }
+
       function applyFrameStyles() {
         const chatDoc = findFrameDocument(href => href.includes("nui://chat/"));
         const playerDoc = findFrameDocument(href => href.includes("nui://es_playerlist/"));
 
         injectFrameStyle(chatDoc, "hammy-chat-theme", CHAT_FRAME_CSS);
         injectFrameStyle(playerDoc, "hammy-playerlist-theme", PLAYERLIST_FRAME_CSS);
+        fixDarkChatText(chatDoc);
         fixDarkPlayerNames(playerDoc);
       }
 
@@ -417,6 +456,15 @@
 
         removeFrameStyle(chatDoc, "hammy-chat-theme");
         removeFrameStyle(playerDoc, "hammy-playerlist-theme");
+
+        try {
+          chatDoc?.querySelectorAll("[data-hammy-chat-brightened='1']").forEach(el => {
+            el.style.removeProperty("color");
+            el.style.removeProperty("-webkit-text-fill-color");
+            el.style.removeProperty("text-shadow");
+            delete el.dataset.hammyChatBrightened;
+          });
+        } catch {}
 
         try {
           playerDoc?.querySelectorAll("[data-hammy-brightened='1']").forEach(el => {
