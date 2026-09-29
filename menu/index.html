@@ -94,7 +94,7 @@
       <div class="brand">
         <div class="icon">☰</div>
         <div>
-          <div class="title">Hammy Menu Styler <span>v0.4</span></div>
+          <div class="title">Hammy Menu Styler <span>v0.5</span></div>
           <div class="subtitle">TT HUD / Menu Diagnostics</div>
         </div>
       </div>
@@ -150,6 +150,7 @@
       </div>
 
       <button id="scopeBtn" type="button" class="secondary full">Scope Test: Outline Reachable TT UI</button>
+      <button id="copyCssBtn" type="button" class="secondary full">Copy Reachable CSS List</button>
       <button id="resetBtn" type="button" class="danger full">Reset Injected CSS</button>
 
       <div class="hint">
@@ -401,6 +402,164 @@
         );
       }
 
+      function collectCssFromDocument(doc, label) {
+        const out = [];
+        out.push("===== " + label + " =====");
+
+        try {
+          out.push("URL: " + (doc.location?.href || "[unknown]"));
+          out.push("TITLE: " + (doc.title || ""));
+        } catch {
+          out.push("URL: [cross-origin]");
+        }
+
+        let sheets = [];
+        try {
+          sheets = Array.from(doc.styleSheets || []);
+        } catch {}
+
+        out.push("STYLESHEETS: " + sheets.length);
+
+        sheets.forEach((sheet, index) => {
+          out.push("");
+          out.push("--- Stylesheet #" + (index + 1) + " ---");
+          out.push("href: " + (sheet.href || "[inline]"));
+
+          try {
+            const rules = Array.from(sheet.cssRules || []);
+            out.push("rules: " + rules.length);
+            for (const rule of rules) out.push(rule.cssText);
+          } catch (error) {
+            out.push("[cssRules blocked: " + String(error?.message || error) + "]");
+          }
+        });
+
+        try {
+          const links = Array.from(doc.querySelectorAll('link[rel~="stylesheet"]'));
+          if (links.length) {
+            out.push("");
+            out.push("--- Stylesheet links ---");
+            links.forEach(link => out.push(link.href || link.getAttribute("href") || "[unknown]"));
+          }
+        } catch {}
+
+        try {
+          const styles = Array.from(doc.querySelectorAll("style"));
+          if (styles.length) {
+            out.push("");
+            out.push("--- Inline <style> blocks ---");
+            styles.forEach((style, index) => {
+              out.push("[style #" + (index + 1) + "]");
+              out.push(style.textContent || "");
+            });
+          }
+        } catch {}
+
+        return out.join("\n");
+      }
+
+      function collectReachableCss() {
+        const sections = [];
+        const seen = new Set();
+
+        function addWindow(win, label) {
+          if (!win) return;
+
+          let doc;
+          try {
+            doc = win.document;
+          } catch {
+            sections.push("===== " + label + " =====\n[cross-origin document blocked]");
+            return;
+          }
+
+          if (!doc || seen.has(doc)) return;
+          seen.add(doc);
+
+          sections.push(collectCssFromDocument(doc, label));
+
+          try {
+            const frames = Array.from(doc.querySelectorAll("iframe,frame"));
+            frames.forEach((frame, index) => {
+              try {
+                if (frame.contentWindow) {
+                  addWindow(frame.contentWindow, label + " -> frame #" + (index + 1));
+                }
+              } catch {
+                sections.push(
+                  "===== " + label + " -> frame #" + (index + 1) + " =====\n[cross-origin frame blocked]"
+                );
+              }
+            });
+          } catch {}
+        }
+
+        addWindow(window, "USERAPP WINDOW");
+
+        try {
+          if (window.parent && window.parent !== window) addWindow(window.parent, "PARENT WINDOW");
+        } catch {}
+
+        try {
+          if (window.top && window.top !== window && window.top !== window.parent) {
+            addWindow(window.top, "TOP WINDOW");
+          }
+        } catch {}
+
+        return sections.join("\n\n");
+      }
+
+      async function copyText(text) {
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(text);
+            return true;
+          }
+        } catch {}
+
+        try {
+          const area = document.createElement("textarea");
+          area.value = text;
+          area.setAttribute("readonly", "");
+          area.style.position = "fixed";
+          area.style.left = "-9999px";
+          document.body.appendChild(area);
+          area.select();
+          const ok = document.execCommand("copy");
+          area.remove();
+          return ok;
+        } catch {
+          return false;
+        }
+      }
+
+      async function copyReachableCss() {
+        setStatus("Building CSS list", "Scanning reachable documents and stylesheets...", "busy");
+
+        const dump = collectReachableCss();
+        console.log("[Hammy Menu] Reachable CSS dump:\n" + dump);
+
+        const copied = await copyText(dump);
+
+        if (copied) {
+          setStatus(
+            "CSS copied",
+            "Copied " + dump.length.toLocaleString() + " characters to your clipboard. Paste it back into ChatGPT.",
+            "ok"
+          );
+          window.parent.postMessage({
+            type: "notification",
+            text: "~b~[Hammy Menu]~w~ Reachable CSS copied to clipboard."
+          }, "*");
+        } else {
+          setStatus(
+            "Clipboard blocked",
+            "The CSS list was printed to the F8/dev console instead.",
+            "error"
+          );
+        }
+      }
+
       function resetStyles() {
         sendCss("", "reset");
         setStatus(
@@ -511,6 +670,7 @@
       $("testPlayersBtn").addEventListener("click", testPlayerList);
       $("testChatBtn").addEventListener("click", testChat);
       $("scopeBtn").addEventListener("click", testScope);
+      $("copyCssBtn").addEventListener("click", copyReachableCss);
       $("resetBtn").addEventListener("click", resetStyles);
 
       loadSettings();
