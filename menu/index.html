@@ -97,7 +97,7 @@
       <div class="brand">
         <div class="icon">☰</div>
         <div>
-          <div class="title">Hammy Menu Styler <span>v0.10</span></div>
+          <div class="title">Hammy Menu Styler <span>v0.11</span></div>
           <div class="subtitle">TT UI Theme</div>
         </div>
       </div>
@@ -161,28 +161,60 @@
 
       const FULL_CSS = `
         .div_money,.div_bmoney,.div_job{
-          background:rgba(8,12,18,.96)!important;
+          position:absolute!important;
+          right:12px!important;
+          width:122px!important;
+          min-width:122px!important;
+          height:34px!important;
+          min-height:34px!important;
+          padding:0 10px!important;
+          display:flex!important;
+          align-items:center!important;
+          justify-content:flex-end!important;
+          gap:7px!important;
+          background:rgba(8,12,18,.95)!important;
           border:1px solid rgba(255,255,255,.09)!important;
-          border-radius:10px!important;
-          box-shadow:0 12px 30px rgba(0,0,0,.32)!important;
-          padding:9px 11px!important;
+          border-radius:9px!important;
+          box-shadow:0 8px 24px rgba(0,0,0,.28)!important;
           color:#edf6ff!important;
           font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif!important;
-          font-size:13px!important;
-          font-weight:800!important;
+          font-size:12px!important;
+          font-weight:850!important;
+          line-height:1!important;
           text-shadow:none!important;
+          white-space:nowrap!important;
+          overflow:hidden!important;
         }
+
         .div_money{
-          top:35px!important;right:10px!important;
-          border-color:rgba(52,211,153,.18)!important
+          top:48px!important;
+          border-color:rgba(52,211,153,.20)!important;
         }
+
         .div_bmoney{
-          top:72px!important;right:10px!important;
-          border-color:rgba(56,189,248,.18)!important
+          top:87px!important;
+          border-color:rgba(56,189,248,.20)!important;
         }
+
         .div_job{
-          top:109px!important;right:10px!important;
-          border-color:rgba(251,191,36,.18)!important
+          top:126px!important;
+          border-color:rgba(251,191,36,.20)!important;
+        }
+
+        .div_money .symbol,
+        .div_bmoney .symbol{
+          width:25px!important;
+          height:25px!important;
+          object-fit:contain!important;
+          flex:none!important;
+        }
+
+        .div_money .symbol{
+          filter:drop-shadow(0 0 6px rgba(52,211,153,.18))!important;
+        }
+
+        .div_bmoney .symbol{
+          filter:drop-shadow(0 0 6px rgba(56,189,248,.18))!important;
         }
 
         .menu{
