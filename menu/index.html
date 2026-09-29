@@ -15,8 +15,6 @@
       --muted:#8393a8;
       --cyan:#38bdf8;
       --green:#34d399;
-      --amber:#fbbf24;
-      --red:#fb7185;
     }
     *{box-sizing:border-box}
     html,body{
@@ -25,6 +23,7 @@
       color:var(--text)
     }
     button,input{font:inherit}
+    .hidden{display:none!important}
     .app{
       position:fixed;left:18px;top:18px;width:318px;
       border:1px solid var(--line);border-radius:14px;overflow:hidden;
@@ -43,49 +42,53 @@
     .title{font-size:12px;font-weight:900;letter-spacing:-.01em}
     .title span{margin-left:4px;color:var(--muted);font-size:7px;font-weight:800}
     .subtitle{margin-top:1px;color:var(--muted);font-size:8px}
-    .live{display:flex;align-items:center;gap:5px;color:#bfead9;font-size:7px;font-weight:900;letter-spacing:.08em}
-    .live i{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px rgba(52,211,153,.65)}
-    main{padding:11px}
-    .settings-card,.status,.diag{
-      background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    .header-actions{display:flex;align-items:center;gap:6px}
+    .live{
+      display:flex;align-items:center;gap:5px;color:#bfead9;
+      font-size:7px;font-weight:900;letter-spacing:.08em;
     }
-    .settings-card{padding:4px 9px;margin-bottom:8px}
+    .live i{
+      width:6px;height:6px;border-radius:50%;background:var(--green);
+      box-shadow:0 0 8px rgba(52,211,153,.65)
+    }
+    .icon-btn{
+      width:28px;height:28px;padding:0;display:grid;place-items:center;
+      border:1px solid var(--line);border-radius:8px;
+      background:rgba(255,255,255,.045);color:var(--text);cursor:pointer;font-size:12px;
+    }
+    .icon-btn:hover{background:rgba(255,255,255,.09)}
+    main{padding:11px}
+    .settings-card{
+      padding:4px 9px;margin-bottom:8px;background:var(--panel);
+      border:1px solid var(--line);border-radius:10px;
+    }
     .check-row{
-      min-height:42px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;
+      min-height:42px;display:flex;align-items:center;justify-content:space-between;
+      gap:10px;cursor:pointer;
     }
     .check-row+.check-row{border-top:1px solid rgba(255,255,255,.06)}
     .check-row strong{display:block;font-size:8px;font-weight:850}
     .check-row small{display:block;margin-top:2px;color:var(--muted);font-size:7px}
     .check-row input{width:15px;height:15px;flex:none;accent-color:var(--cyan)}
-    .status{
-      min-height:50px;padding:9px 10px;margin-bottom:8px;display:flex;align-items:flex-start;gap:8px;
+    #applyBtn{
+      width:100%;min-height:34px;border:1px solid rgba(56,189,248,.2);border-radius:9px;
+      color:#e9f8ff;background:rgba(56,189,248,.10);font-size:9px;font-weight:900;cursor:pointer;
     }
-    .status>i{width:7px;height:7px;flex:none;margin-top:4px;border-radius:50%;background:var(--amber)}
-    .status strong{display:block;font-size:9px}
-    .status span{display:block;margin-top:3px;color:var(--muted);font-size:8px;line-height:1.35}
-    .status.ok>i{background:var(--green)}
-    .status.busy>i{background:var(--cyan);box-shadow:0 0 8px rgba(56,189,248,.55)}
-    .status.error>i{background:var(--red)}
-    .diag{
-      display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:8px;overflow:hidden;
+    #applyBtn:hover{background:rgba(56,189,248,.16)}
+    .hint{
+      margin-top:8px;text-align:center;color:var(--muted);
+      font-size:7px;line-height:1.35;
     }
-    .diag>div{padding:8px 9px}
-    .diag>div+div{border-left:1px solid var(--line)}
-    .diag span{display:block;color:var(--muted);font-size:7px;text-transform:uppercase;letter-spacing:.06em;font-weight:850}
-    .diag strong{display:block;margin-top:3px;font-size:12px}
-    .actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px}
-    button{
-      min-height:34px;border-radius:9px;font-size:9px;font-weight:900;cursor:pointer;
-      color:#e9f8ff;background:rgba(56,189,248,.10);border:1px solid rgba(56,189,248,.2);
-    }
-    button:hover{background:rgba(56,189,248,.16)}
-    button.secondary{color:#eafff6;background:rgba(52,211,153,.10);border-color:rgba(52,211,153,.2)}
-    button.secondary:hover{background:rgba(52,211,153,.16)}
-    button.danger{color:#ffeef2;background:rgba(251,113,133,.08);border-color:rgba(251,113,133,.18)}
-    button.danger:hover{background:rgba(251,113,133,.14)}
-    .full{width:100%;margin-bottom:7px}
-    .hint{text-align:center;color:var(--muted);font-size:7px;line-height:1.35}
     .hint strong{color:#cdeeff}
+    .toggle-btn{
+      position:fixed;right:24px;bottom:24px;width:40px;height:40px;
+      display:grid;place-items:center;padding:0;z-index:9999;
+      border:1px solid rgba(56,189,248,.18);border-radius:11px;
+      background:linear-gradient(145deg,rgba(8,12,18,.97),rgba(17,24,35,.985));
+      color:#d9f4ff;box-shadow:0 12px 32px rgba(0,0,0,.32);
+      cursor:pointer;font-size:15px;
+    }
+    .toggle-btn:hover{background:#171f2b}
   </style>
 </head>
 <body>
@@ -94,19 +97,23 @@
       <div class="brand">
         <div class="icon">☰</div>
         <div>
-          <div class="title">Hammy Menu Styler <span>v0.6</span></div>
-          <div class="subtitle">TT HUD / Menu Diagnostics</div>
+          <div class="title">Hammy Menu Styler <span>v0.7</span></div>
+          <div class="subtitle">TT UI Theme</div>
         </div>
       </div>
-      <div class="live"><i></i> READY</div>
+
+      <div class="header-actions">
+        <div class="live"><i></i> ACTIVE</div>
+        <button id="hideBtn" class="icon-btn" type="button" title="Hide" aria-label="Hide">×</button>
+      </div>
     </header>
 
     <main>
       <section class="settings-card">
         <label class="check-row">
           <span>
-            <strong>Enable HUD styling</strong>
-            <small>Apply the Hammy theme to TT menus and HUD blocks.</small>
+            <strong>Enable UI styling</strong>
+            <small>Theme menus, chat, HUD blocks and Player List.</small>
           </span>
           <input id="enabled" type="checkbox" checked>
         </label>
@@ -114,51 +121,23 @@
         <label class="check-row">
           <span>
             <strong>Auto apply on launch</strong>
-            <small>Send the CSS automatically when this userapp opens.</small>
+            <small>Restore the Hammy theme whenever the app loads.</small>
           </span>
           <input id="autoApply" type="checkbox" checked>
         </label>
       </section>
 
-      <div class="status" id="status">
-        <i></i>
-        <div>
-          <strong id="statusTitle">Ready</strong>
-          <span id="statusText">Use Test Injection first to verify TT still accepts setDivCss.</span>
-        </div>
-      </div>
-
-      <div class="diag">
-        <div>
-          <span>CSS Sends</span>
-          <strong id="sendCount">0</strong>
-        </div>
-        <div>
-          <span>Parent Events</span>
-          <strong id="eventCount">0</strong>
-        </div>
-      </div>
-
-      <div class="actions">
-        <button id="applyBtn" type="button">Apply Styles</button>
-        <button id="testBtn" type="button" class="secondary">Test Menu</button>
-      </div>
-
-      <div class="actions">
-        <button id="testPlayersBtn" type="button" class="secondary">Test Player List</button>
-        <button id="testChatBtn" type="button" class="secondary">Test Chat / Input</button>
-      </div>
-
-      <button id="scopeBtn" type="button" class="secondary full">Scope Test: Outline Reachable TT UI</button>
-      <button id="copyCssBtn" type="button" class="secondary full">Copy Reachable CSS List</button>
-      <button id="resetBtn" type="button" class="danger full">Reset Injected CSS</button>
+      <button id="applyBtn" type="button">Apply Hammy Theme</button>
 
       <div class="hint">
-        Open the target TT UI first, then run a test. Matching elements get a <strong>bright outline</strong> for 5 seconds.<br>
+        FiveM keybind: <strong>Toggle Hammy Menu Styler</strong><br>
         ESC pins/unpins this app.
       </div>
     </main>
   </section>
+
+  <button id="showBtn" class="toggle-btn hidden" type="button"
+    title="Open Hammy Menu Styler" aria-label="Open Hammy Menu Styler">☰</button>
 
   <script>
     (() => {
@@ -166,14 +145,16 @@
 
       const POSITION_KEY = "hammyMenu.position.v1";
       const SETTINGS_KEY = "hammyMenu.settings.v1";
+      const TOGGLE_TRIGGER = "hammymenutoggle";
+      const TOGGLE_TRIGGER_KEY = "trigger_" + TOGGLE_TRIGGER;
 
       const state = {
-        sendCount: 0,
-        eventCount: 0,
         settings: {
           enabled: true,
           autoApply: true
-        }
+        },
+        keybindReady: false,
+        lastToggleTrigger: undefined
       };
 
       const $ = id => document.getElementById(id);
@@ -191,7 +172,6 @@
           font-weight:800!important;
           text-shadow:none!important;
         }
-
         .div_money{border-color:rgba(52,211,153,.18)!important}
         .div_bmoney{border-color:rgba(56,189,248,.18)!important}
         .div_job{border-color:rgba(251,191,36,.18)!important}
@@ -204,59 +184,38 @@
           overflow:hidden!important;
           font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif!important;
         }
-
         .menu h1{
-          margin:0!important;
-          padding:10px 12px!important;
+          margin:0!important;padding:10px 12px!important;
           background:rgba(15,23,34,.98)!important;
-          border:0!important;
-          border-bottom:1px solid rgba(255,255,255,.08)!important;
-          color:#edf6ff!important;
-          font-size:13px!important;
-          font-weight:900!important;
+          border:0!important;border-bottom:1px solid rgba(255,255,255,.08)!important;
+          color:#edf6ff!important;font-size:13px!important;font-weight:900!important;
           text-shadow:none!important;
         }
-
         .menu .choices{
-          padding:6px!important;
-          background:rgba(8,12,18,.97)!important;
+          padding:6px!important;background:rgba(8,12,18,.97)!important;
         }
-
         .menu .choices > div{
-          margin:3px 0!important;
-          padding:8px 10px!important;
-          border:1px solid transparent!important;
-          border-radius:8px!important;
-          background:rgba(255,255,255,.035)!important;
-          color:#dfeaf5!important;
+          margin:3px 0!important;padding:8px 10px!important;
+          border:1px solid transparent!important;border-radius:8px!important;
+          background:rgba(255,255,255,.035)!important;color:#dfeaf5!important;
           font-size:12px!important;
           transition:background .12s ease,border-color .12s ease!important;
         }
-
         .menu .choices > div:hover,
         .menu .choices > div.selected{
           background:rgba(56,189,248,.10)!important;
           border-color:rgba(56,189,248,.20)!important;
           color:#ffffff!important;
         }
-
-        /* Keep embedded widgets (inventory weight/progress bars, etc.) from
-           inheriting menu-row card styling. */
-        .menu .choices > div div{
-          border-radius:inherit;
-        }
-
+        .menu .choices > div div{border-radius:inherit}
         .menu_description{
           background:rgba(8,12,18,.97)!important;
           border:1px solid rgba(255,255,255,.09)!important;
           border-radius:10px!important;
           box-shadow:0 12px 30px rgba(0,0,0,.32)!important;
-          padding:9px 11px!important;
-          color:#cbd8e6!important;
+          padding:9px 11px!important;color:#cbd8e6!important;
           font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif!important;
-          font-size:11px!important;
-          line-height:1.4!important;
-          text-shadow:none!important;
+          font-size:11px!important;line-height:1.4!important;text-shadow:none!important;
         }
       `;
 
@@ -272,40 +231,28 @@
         *{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif!important}
         .chat-window{
           background:linear-gradient(160deg,rgba(15,23,34,.92),rgba(8,12,18,.90))!important;
-          border:1px solid var(--hammy-line)!important;
-          border-radius:12px!important;
-          box-shadow:0 14px 40px rgba(0,0,0,.34)!important;
-          overflow:hidden!important;
+          border:1px solid var(--hammy-line)!important;border-radius:12px!important;
+          box-shadow:0 14px 40px rgba(0,0,0,.34)!important;overflow:hidden!important;
         }
         .chat-messages{
-          color:var(--hammy-text)!important;
-          margin:8px 10px!important;
-          font-size:1rem!important;
-          line-height:1.35!important;
+          color:var(--hammy-text)!important;margin:8px 10px!important;
+          font-size:1rem!important;line-height:1.35!important;
         }
         .chat-input{
           background:var(--hammy-panel)!important;
-          border:1px solid rgba(56,189,248,.20)!important;
-          border-radius:10px!important;
-          box-shadow:0 10px 26px rgba(0,0,0,.30)!important;
-          overflow:hidden!important;
+          border:1px solid rgba(56,189,248,.20)!important;border-radius:10px!important;
+          box-shadow:0 10px 26px rgba(0,0,0,.30)!important;overflow:hidden!important;
         }
         .chat-input textarea{
-          color:var(--hammy-text)!important;
-          background:transparent!important;
-          border:0!important;
-          padding:7px 9px 7px 28px!important;
-          font-size:1rem!important;
-          resize:none!important;
+          color:var(--hammy-text)!important;background:transparent!important;border:0!important;
+          padding:7px 9px 7px 28px!important;font-size:1rem!important;resize:none!important;
         }
         .chat-input textarea::placeholder{color:var(--hammy-muted)!important}
         .prefix{color:var(--hammy-cyan)!important}
         .suggestions{
-          background:var(--hammy-panel)!important;
-          color:var(--hammy-text)!important;
+          background:var(--hammy-panel)!important;color:var(--hammy-text)!important;
           border-top:1px solid var(--hammy-line)!important;
-          padding:7px 9px 7px 28px!important;
-          font-size:.95rem!important;
+          padding:7px 9px 7px 28px!important;font-size:.95rem!important;
         }
         .suggestion{margin-bottom:4px!important}
         .help,.disabled{color:var(--hammy-muted)!important}
@@ -319,107 +266,42 @@
           --hammy-line:rgba(255,255,255,.09);
           --hammy-text:#edf6ff;
           --hammy-muted:#93a4b8;
-          --hammy-cyan:#38bdf8;
         }
         body{
           font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif!important;
         }
         #playerlist{
-          border:1px solid var(--hammy-line)!important;
-          border-radius:12px!important;
-          overflow:hidden!important;
-          padding:0!important;
-          color:var(--hammy-text)!important;
+          border:1px solid var(--hammy-line)!important;border-radius:12px!important;
+          overflow:hidden!important;padding:0!important;color:var(--hammy-text)!important;
           background:var(--hammy-bg)!important;
-          box-shadow:0 14px 40px rgba(0,0,0,.38)!important;
-          font-size:14px!important;
+          box-shadow:0 14px 40px rgba(0,0,0,.38)!important;font-size:14px!important;
         }
         #playerlist .titles{
-          background:var(--hammy-panel)!important;
-          border-bottom:1px solid var(--hammy-line)!important;
-          margin:0!important;
-          padding:5px 4px!important;
-          color:var(--hammy-muted)!important;
-          font-size:12px!important;
-          font-weight:800!important;
+          background:var(--hammy-panel)!important;border-bottom:1px solid var(--hammy-line)!important;
+          margin:0!important;padding:5px 4px!important;color:var(--hammy-muted)!important;
+          font-size:12px!important;font-weight:800!important;
         }
         #playerlist .player{
           background:rgba(255,255,255,.025)!important;
           border-bottom:1px solid rgba(255,255,255,.055)!important;
-          font-size:13px!important;
-          font-weight:600!important;
+          font-size:13px!important;font-weight:600!important;
           transition:background .12s ease!important;
         }
         #playerlist .player:nth-child(even){background:rgba(255,255,255,.04)!important}
         #playerlist .player:hover{background:rgba(56,189,248,.10)!important}
-        #playerlist .player .title,
-        #playerlist .player .name{
-          text-shadow:none!important;
-          color:var(--hammy-text)!important;
-        }
-        #playerlist .id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace!important;color:#b8c7d9!important}
-      `;
-
-      const TEST_CSS = `
-        .menu{
-          outline:3px solid #38bdf8!important;
-          outline-offset:3px!important;
-          box-shadow:0 0 26px rgba(56,189,248,.8)!important;
+        #playerlist .player .title{color:var(--hammy-text)!important;text-shadow:none!important}
+        #playerlist .id{
+          font-family:ui-monospace,SFMono-Regular,Menlo,monospace!important;
+          color:#b8c7d9!important;
         }
       `;
 
-      const PLAYER_TEST_CSS = `
-        .playerlist,.player-list,.players,.players-list,.player_list,
-        #playerlist,#player-list,#players,#players-list,
-        [class*="playerlist"],[class*="player-list"],[class*="players-list"],
-        [id*="playerlist"],[id*="player-list"]{
-          outline:3px solid #34d399!important;
-          outline-offset:3px!important;
-          box-shadow:0 0 26px rgba(52,211,153,.8)!important;
-        }
-      `;
-
-      const CHAT_TEST_CSS = `
-        .chat,.chatbox,.chat-box,.chatInput,.chat-input,.chatbox-input,
-        #chat,#chatbox,#chat-box,#chatInput,#chat-input,
-        input[type="text"],textarea,
-        [class*="chat"],[id*="chat"]{
-          outline:3px solid #fbbf24!important;
-          outline-offset:3px!important;
-          box-shadow:0 0 26px rgba(251,191,36,.75)!important;
-        }
-      `;
-
-      const SCOPE_TEST_CSS = `
-        html,body,body *,div,section,main,aside,nav,ul,ol,li,table,tr,td,
-        input,textarea,button{
-          outline:1px solid rgba(251,113,133,.9)!important;
-          outline-offset:-1px!important;
-        }
-      `;
-
-      function setStatus(title, text, kind = "") {
-        const box = $("status");
-        box.className = "status" + (kind ? " " + kind : "");
-        $("statusTitle").textContent = title;
-        $("statusText").textContent = text;
-      }
-
-      function renderCounters() {
-        $("sendCount").textContent = String(state.sendCount);
-        $("eventCount").textContent = String(state.eventCount);
-      }
-
-      function sendCss(css, label) {
+      function sendCss(css) {
         window.parent.postMessage({
           type: "setDivCss",
           div: "additional_css",
           css
         }, "*");
-
-        state.sendCount += 1;
-        renderCounters();
-        console.log("[Hammy Menu] setDivCss:", label, { length: css.length });
       }
 
       function findFrameDocument(match) {
@@ -457,276 +339,77 @@
         try { doc?.getElementById(id)?.remove(); } catch {}
       }
 
+      function fixDarkPlayerNames(doc) {
+        if (!doc) return;
+
+        let candidates = [];
+        try {
+          candidates = Array.from(
+            doc.querySelectorAll(
+              "#playerlist .player .name, #playerlist .player .name *, " +
+              "#playerlist .player [class*='name'], #playerlist .player [class*='name'] *"
+            )
+          );
+        } catch {
+          return;
+        }
+
+        for (const el of candidates) {
+          try {
+            const color = doc.defaultView.getComputedStyle(el).color;
+            const match = color.match(/rgba?\((\d+)\D+(\d+)\D+(\d+)/i);
+            if (!match) continue;
+
+            const r = Number(match[1]);
+            const g = Number(match[2]);
+            const b = Number(match[3]);
+            const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+            if (luminance < 75) {
+              el.style.setProperty("color", "#f4f8ff", "important");
+              el.style.setProperty("-webkit-text-fill-color", "#f4f8ff", "important");
+              el.style.setProperty("text-shadow", "none", "important");
+              el.dataset.hammyBrightened = "1";
+            }
+          } catch {}
+        }
+      }
+
       function applyFrameStyles() {
         const chatDoc = findFrameDocument(href => href.includes("nui://chat/"));
         const playerDoc = findFrameDocument(href => href.includes("nui://es_playerlist/"));
 
-        const chatOk = injectFrameStyle(chatDoc, "hammy-chat-theme", CHAT_FRAME_CSS);
-        const playerOk = injectFrameStyle(playerDoc, "hammy-playerlist-theme", PLAYERLIST_FRAME_CSS);
-
-        return { chatOk, playerOk };
+        injectFrameStyle(chatDoc, "hammy-chat-theme", CHAT_FRAME_CSS);
+        injectFrameStyle(playerDoc, "hammy-playerlist-theme", PLAYERLIST_FRAME_CSS);
+        fixDarkPlayerNames(playerDoc);
       }
 
       function resetFrameStyles() {
         const chatDoc = findFrameDocument(href => href.includes("nui://chat/"));
         const playerDoc = findFrameDocument(href => href.includes("nui://es_playerlist/"));
+
         removeFrameStyle(chatDoc, "hammy-chat-theme");
         removeFrameStyle(playerDoc, "hammy-playerlist-theme");
+
+        try {
+          playerDoc?.querySelectorAll("[data-hammy-brightened='1']").forEach(el => {
+            el.style.removeProperty("color");
+            el.style.removeProperty("-webkit-text-fill-color");
+            el.style.removeProperty("text-shadow");
+            delete el.dataset.hammyBrightened;
+          });
+        } catch {}
       }
 
       function applyStyles() {
-        if (!state.settings.enabled) {
-          setStatus("Styling disabled", "Enable HUD styling first.", "error");
-          return;
-        }
-
-        sendCss(FULL_CSS, "full");
-        const frameResult = applyFrameStyles();
-        setStatus(
-          "Styles sent",
-          "Menus styled. Chat: " + (frameResult.chatOk ? "OK" : "not found") +
-            " · Player List: " + (frameResult.playerOk ? "OK" : "not found"),
-          "ok"
-        );
-
-        window.parent.postMessage({
-          type: "notification",
-          text: "~b~[Hammy Menu]~w~ HUD styles sent."
-        }, "*");
-      }
-
-      function testInjection() {
-        sendCss(TEST_CSS, "test");
-        setStatus(
-          "Test CSS sent",
-          "Open a TT menu now. It should have a bright cyan outline for 4 seconds.",
-          "busy"
-        );
-
-        setTimeout(() => {
-          if (state.settings.enabled) {
-            sendCss(FULL_CSS, "restore-after-test");
-            setStatus("Test finished", "Restored the Hammy menu stylesheet.", "ok");
-          } else {
-            sendCss("", "clear-after-test");
-            setStatus("Test finished", "Cleared the temporary test stylesheet.", "ok");
-          }
-        }, 4000);
-      }
-
-      function temporaryTest(css, label, title, text) {
-        sendCss(css, label);
-        setStatus(title, text, "busy");
-
-        setTimeout(() => {
-          if (state.settings.enabled) {
-            sendCss(FULL_CSS, "restore-after-" + label);
-            setStatus("Test finished", "Restored the Hammy menu stylesheet.", "ok");
-          } else {
-            sendCss("", "clear-after-" + label);
-            setStatus("Test finished", "Cleared the temporary test stylesheet.", "ok");
-          }
-        }, 5000);
-      }
-
-      function testPlayerList() {
-        temporaryTest(
-          PLAYER_TEST_CSS,
-          "player-list-test",
-          "Player List test sent",
-          "Open the TT Player List. Matching containers should glow green for 5 seconds."
-        );
-      }
-
-      function testChat() {
-        temporaryTest(
-          CHAT_TEST_CSS,
-          "chat-test",
-          "Chat/Input test sent",
-          "Keep chat open or focus the text box. Matching elements should glow amber for 5 seconds."
-        );
-      }
-
-      function testScope() {
-        temporaryTest(
-          SCOPE_TEST_CSS,
-          "scope-test",
-          "Scope test sent",
-          "Reachable TT UI should show red outlines for 5 seconds. Check Player List and chat specifically."
-        );
-      }
-
-      function collectCssFromDocument(doc, label) {
-        const out = [];
-        out.push("===== " + label + " =====");
-
-        try {
-          out.push("URL: " + (doc.location?.href || "[unknown]"));
-          out.push("TITLE: " + (doc.title || ""));
-        } catch {
-          out.push("URL: [cross-origin]");
-        }
-
-        let sheets = [];
-        try {
-          sheets = Array.from(doc.styleSheets || []);
-        } catch {}
-
-        out.push("STYLESHEETS: " + sheets.length);
-
-        sheets.forEach((sheet, index) => {
-          out.push("");
-          out.push("--- Stylesheet #" + (index + 1) + " ---");
-          out.push("href: " + (sheet.href || "[inline]"));
-
-          try {
-            const rules = Array.from(sheet.cssRules || []);
-            out.push("rules: " + rules.length);
-            for (const rule of rules) out.push(rule.cssText);
-          } catch (error) {
-            out.push("[cssRules blocked: " + String(error?.message || error) + "]");
-          }
-        });
-
-        try {
-          const links = Array.from(doc.querySelectorAll('link[rel~="stylesheet"]'));
-          if (links.length) {
-            out.push("");
-            out.push("--- Stylesheet links ---");
-            links.forEach(link => out.push(link.href || link.getAttribute("href") || "[unknown]"));
-          }
-        } catch {}
-
-        try {
-          const styles = Array.from(doc.querySelectorAll("style"));
-          if (styles.length) {
-            out.push("");
-            out.push("--- Inline <style> blocks ---");
-            styles.forEach((style, index) => {
-              out.push("[style #" + (index + 1) + "]");
-              out.push(style.textContent || "");
-            });
-          }
-        } catch {}
-
-        return out.join("\n");
-      }
-
-      function collectReachableCss() {
-        const sections = [];
-        const seen = new Set();
-
-        function addWindow(win, label) {
-          if (!win) return;
-
-          let doc;
-          try {
-            doc = win.document;
-          } catch {
-            sections.push("===== " + label + " =====\n[cross-origin document blocked]");
-            return;
-          }
-
-          if (!doc || seen.has(doc)) return;
-          seen.add(doc);
-
-          sections.push(collectCssFromDocument(doc, label));
-
-          try {
-            const frames = Array.from(doc.querySelectorAll("iframe,frame"));
-            frames.forEach((frame, index) => {
-              try {
-                if (frame.contentWindow) {
-                  addWindow(frame.contentWindow, label + " -> frame #" + (index + 1));
-                }
-              } catch {
-                sections.push(
-                  "===== " + label + " -> frame #" + (index + 1) + " =====\n[cross-origin frame blocked]"
-                );
-              }
-            });
-          } catch {}
-        }
-
-        addWindow(window, "USERAPP WINDOW");
-
-        try {
-          if (window.parent && window.parent !== window) addWindow(window.parent, "PARENT WINDOW");
-        } catch {}
-
-        try {
-          if (window.top && window.top !== window && window.top !== window.parent) {
-            addWindow(window.top, "TOP WINDOW");
-          }
-        } catch {}
-
-        return sections.join("\n\n");
-      }
-
-      async function copyText(text) {
-        try {
-          if (navigator.clipboard?.writeText) {
-            await navigator.clipboard.writeText(text);
-            return true;
-          }
-        } catch {}
-
-        try {
-          const area = document.createElement("textarea");
-          area.value = text;
-          area.setAttribute("readonly", "");
-          area.style.position = "fixed";
-          area.style.left = "-9999px";
-          document.body.appendChild(area);
-          area.select();
-          const ok = document.execCommand("copy");
-          area.remove();
-          return ok;
-        } catch {
-          return false;
-        }
-      }
-
-      async function copyReachableCss() {
-        setStatus("Building CSS list", "Scanning reachable documents and stylesheets...", "busy");
-
-        const dump = collectReachableCss();
-        console.log("[Hammy Menu] Reachable CSS dump:\n" + dump);
-
-        const copied = await copyText(dump);
-
-        if (copied) {
-          setStatus(
-            "CSS copied",
-            "Copied " + dump.length.toLocaleString() + " characters to your clipboard. Paste it back into ChatGPT.",
-            "ok"
-          );
-          window.parent.postMessage({
-            type: "notification",
-            text: "~b~[Hammy Menu]~w~ Reachable CSS copied to clipboard."
-          }, "*");
-        } else {
-          setStatus(
-            "Clipboard blocked",
-            "The CSS list was printed to the F8/dev console instead.",
-            "error"
-          );
-        }
+        if (!state.settings.enabled) return;
+        sendCss(FULL_CSS);
+        applyFrameStyles();
       }
 
       function resetStyles() {
-        sendCss("", "reset");
+        sendCss("");
         resetFrameStyles();
-        setStatus(
-          "Injected CSS cleared",
-          "Sent an empty additional_css stylesheet to TT.",
-          "ok"
-        );
-
-        window.parent.postMessage({
-          type: "notification",
-          text: "~r~[Hammy Menu]~w~ Injected HUD CSS cleared."
-        }, "*");
       }
 
       function saveSettings() {
@@ -746,6 +429,21 @@
 
         $("enabled").checked = state.settings.enabled;
         $("autoApply").checked = state.settings.autoApply;
+      }
+
+      function hideApp() {
+        $("app").classList.add("hidden");
+        $("showBtn").classList.remove("hidden");
+      }
+
+      function showApp() {
+        $("app").classList.remove("hidden");
+        $("showBtn").classList.add("hidden");
+      }
+
+      function toggleApp() {
+        if ($("app").classList.contains("hidden")) showApp();
+        else hideApp();
       }
 
       function setupDrag() {
@@ -792,10 +490,23 @@
       }
 
       window.addEventListener("message", event => {
-        if (!event.data) return;
-        state.eventCount += 1;
-        renderCounters();
-        console.log("[Hammy Menu] parent event:", event.data);
+        const raw = event.data;
+        const data = raw?.data || raw;
+        if (!data || typeof data !== "object") return;
+
+        if (Object.prototype.hasOwnProperty.call(data, TOGGLE_TRIGGER_KEY)) {
+          const value = data[TOGGLE_TRIGGER_KEY];
+
+          if (
+            state.keybindReady &&
+            state.lastToggleTrigger !== undefined &&
+            value !== state.lastToggleTrigger
+          ) {
+            toggleApp();
+          }
+
+          state.lastToggleTrigger = value;
+        }
       });
 
       window.addEventListener("keydown", event => {
@@ -808,11 +519,8 @@
         state.settings.enabled = event.target.checked;
         saveSettings();
 
-        if (state.settings.enabled) {
-          applyStyles();
-        } else {
-          resetStyles();
-        }
+        if (state.settings.enabled) applyStyles();
+        else resetStyles();
       });
 
       $("autoApply").addEventListener("change", event => {
@@ -821,27 +529,30 @@
       });
 
       $("applyBtn").addEventListener("click", applyStyles);
-      $("testBtn").addEventListener("click", testInjection);
-      $("testPlayersBtn").addEventListener("click", testPlayerList);
-      $("testChatBtn").addEventListener("click", testChat);
-      $("scopeBtn").addEventListener("click", testScope);
-      $("copyCssBtn").addEventListener("click", copyReachableCss);
-      $("resetBtn").addEventListener("click", resetStyles);
+      $("hideBtn").addEventListener("click", hideApp);
+      $("showBtn").addEventListener("click", showApp);
 
       loadSettings();
       setupDrag();
-      renderCounters();
+
+      window.parent.postMessage({
+        type: "registerTrigger",
+        trigger: TOGGLE_TRIGGER,
+        name: "Toggle Hammy Menu Styler"
+      }, "*");
 
       window.parent.postMessage({ type: "getData" }, "*");
+
+      setTimeout(() => {
+        state.keybindReady = true;
+      }, 2000);
 
       setInterval(() => {
         if (state.settings.enabled) applyFrameStyles();
       }, 1500);
 
       setTimeout(() => {
-        if (state.settings.enabled && state.settings.autoApply) {
-          applyStyles();
-        }
+        if (state.settings.enabled && state.settings.autoApply) applyStyles();
       }, 500);
     })();
   </script>
