@@ -94,7 +94,7 @@
       <div class="brand">
         <div class="icon">☰</div>
         <div>
-          <div class="title">Hammy Menu Styler <span>v0.2</span></div>
+          <div class="title">Hammy Menu Styler <span>v0.3</span></div>
           <div class="subtitle">TT HUD / Menu Diagnostics</div>
         </div>
       </div>
@@ -141,13 +141,18 @@
 
       <div class="actions">
         <button id="applyBtn" type="button">Apply Styles</button>
-        <button id="testBtn" type="button" class="secondary">Test Injection</button>
+        <button id="testBtn" type="button" class="secondary">Test Menu</button>
+      </div>
+
+      <div class="actions">
+        <button id="testPlayersBtn" type="button" class="secondary">Test Player List</button>
+        <button id="testChatBtn" type="button" class="secondary">Test Chat / Input</button>
       </div>
 
       <button id="resetBtn" type="button" class="danger full">Reset Injected CSS</button>
 
       <div class="hint">
-        Test Injection should add a <strong>bright cyan outline</strong> to TT menus for 4 seconds.<br>
+        Open the target TT UI first, then run a test. Matching elements get a <strong>bright outline</strong> for 5 seconds.<br>
         ESC pins/unpins this app.
       </div>
     </main>
@@ -261,6 +266,28 @@
         }
       `;
 
+      const PLAYER_TEST_CSS = `
+        .playerlist,.player-list,.players,.players-list,.player_list,
+        #playerlist,#player-list,#players,#players-list,
+        [class*="playerlist"],[class*="player-list"],[class*="players-list"],
+        [id*="playerlist"],[id*="player-list"]{
+          outline:3px solid #34d399!important;
+          outline-offset:3px!important;
+          box-shadow:0 0 26px rgba(52,211,153,.8)!important;
+        }
+      `;
+
+      const CHAT_TEST_CSS = `
+        .chat,.chatbox,.chat-box,.chatInput,.chat-input,.chatbox-input,
+        #chat,#chatbox,#chat-box,#chatInput,#chat-input,
+        input[type="text"],textarea,
+        [class*="chat"],[id*="chat"]{
+          outline:3px solid #fbbf24!important;
+          outline-offset:3px!important;
+          box-shadow:0 0 26px rgba(251,191,36,.75)!important;
+        }
+      `;
+
       function setStatus(title, text, kind = "") {
         const box = $("status");
         box.className = "status" + (kind ? " " + kind : "");
@@ -321,6 +348,39 @@
             setStatus("Test finished", "Cleared the temporary test stylesheet.", "ok");
           }
         }, 4000);
+      }
+
+      function temporaryTest(css, label, title, text) {
+        sendCss(css, label);
+        setStatus(title, text, "busy");
+
+        setTimeout(() => {
+          if (state.settings.enabled) {
+            sendCss(FULL_CSS, "restore-after-" + label);
+            setStatus("Test finished", "Restored the Hammy menu stylesheet.", "ok");
+          } else {
+            sendCss("", "clear-after-" + label);
+            setStatus("Test finished", "Cleared the temporary test stylesheet.", "ok");
+          }
+        }, 5000);
+      }
+
+      function testPlayerList() {
+        temporaryTest(
+          PLAYER_TEST_CSS,
+          "player-list-test",
+          "Player List test sent",
+          "Open the TT Player List. Matching containers should glow green for 5 seconds."
+        );
+      }
+
+      function testChat() {
+        temporaryTest(
+          CHAT_TEST_CSS,
+          "chat-test",
+          "Chat/Input test sent",
+          "Keep chat open or focus the text box. Matching elements should glow amber for 5 seconds."
+        );
       }
 
       function resetStyles() {
@@ -430,6 +490,8 @@
 
       $("applyBtn").addEventListener("click", applyStyles);
       $("testBtn").addEventListener("click", testInjection);
+      $("testPlayersBtn").addEventListener("click", testPlayerList);
+      $("testChatBtn").addEventListener("click", testChat);
       $("resetBtn").addEventListener("click", resetStyles);
 
       loadSettings();
