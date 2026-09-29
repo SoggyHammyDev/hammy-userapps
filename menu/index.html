@@ -94,7 +94,7 @@
       <div class="brand">
         <div class="icon">☰</div>
         <div>
-          <div class="title">Hammy Menu Styler <span>v0.5</span></div>
+          <div class="title">Hammy Menu Styler <span>v0.6</span></div>
           <div class="subtitle">TT HUD / Menu Diagnostics</div>
         </div>
       </div>
@@ -260,6 +260,106 @@
         }
       `;
 
+      const CHAT_FRAME_CSS = `
+        :root{
+          --hammy-bg:rgba(8,12,18,.94);
+          --hammy-panel:rgba(15,23,34,.96);
+          --hammy-line:rgba(255,255,255,.10);
+          --hammy-text:#edf6ff;
+          --hammy-muted:#9aabc0;
+          --hammy-cyan:#38bdf8;
+        }
+        *{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif!important}
+        .chat-window{
+          background:linear-gradient(160deg,rgba(15,23,34,.92),rgba(8,12,18,.90))!important;
+          border:1px solid var(--hammy-line)!important;
+          border-radius:12px!important;
+          box-shadow:0 14px 40px rgba(0,0,0,.34)!important;
+          overflow:hidden!important;
+        }
+        .chat-messages{
+          color:var(--hammy-text)!important;
+          margin:8px 10px!important;
+          font-size:1rem!important;
+          line-height:1.35!important;
+        }
+        .chat-input{
+          background:var(--hammy-panel)!important;
+          border:1px solid rgba(56,189,248,.20)!important;
+          border-radius:10px!important;
+          box-shadow:0 10px 26px rgba(0,0,0,.30)!important;
+          overflow:hidden!important;
+        }
+        .chat-input textarea{
+          color:var(--hammy-text)!important;
+          background:transparent!important;
+          border:0!important;
+          padding:7px 9px 7px 28px!important;
+          font-size:1rem!important;
+          resize:none!important;
+        }
+        .chat-input textarea::placeholder{color:var(--hammy-muted)!important}
+        .prefix{color:var(--hammy-cyan)!important}
+        .suggestions{
+          background:var(--hammy-panel)!important;
+          color:var(--hammy-text)!important;
+          border-top:1px solid var(--hammy-line)!important;
+          padding:7px 9px 7px 28px!important;
+          font-size:.95rem!important;
+        }
+        .suggestion{margin-bottom:4px!important}
+        .help,.disabled{color:var(--hammy-muted)!important}
+        .chat-btn{background:rgba(56,189,248,.10)!important;color:var(--hammy-text)!important}
+      `;
+
+      const PLAYERLIST_FRAME_CSS = `
+        :root{
+          --hammy-bg:rgba(8,12,18,.96);
+          --hammy-panel:rgba(15,23,34,.98);
+          --hammy-line:rgba(255,255,255,.09);
+          --hammy-text:#edf6ff;
+          --hammy-muted:#93a4b8;
+          --hammy-cyan:#38bdf8;
+        }
+        body{
+          font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif!important;
+        }
+        #playerlist{
+          border:1px solid var(--hammy-line)!important;
+          border-radius:12px!important;
+          overflow:hidden!important;
+          padding:0!important;
+          color:var(--hammy-text)!important;
+          background:var(--hammy-bg)!important;
+          box-shadow:0 14px 40px rgba(0,0,0,.38)!important;
+          font-size:14px!important;
+        }
+        #playerlist .titles{
+          background:var(--hammy-panel)!important;
+          border-bottom:1px solid var(--hammy-line)!important;
+          margin:0!important;
+          padding:5px 4px!important;
+          color:var(--hammy-muted)!important;
+          font-size:12px!important;
+          font-weight:800!important;
+        }
+        #playerlist .player{
+          background:rgba(255,255,255,.025)!important;
+          border-bottom:1px solid rgba(255,255,255,.055)!important;
+          font-size:13px!important;
+          font-weight:600!important;
+          transition:background .12s ease!important;
+        }
+        #playerlist .player:nth-child(even){background:rgba(255,255,255,.04)!important}
+        #playerlist .player:hover{background:rgba(56,189,248,.10)!important}
+        #playerlist .player .title,
+        #playerlist .player .name{
+          text-shadow:none!important;
+          color:var(--hammy-text)!important;
+        }
+        #playerlist .id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace!important;color:#b8c7d9!important}
+      `;
+
       const TEST_CSS = `
         .menu{
           outline:3px solid #38bdf8!important;
@@ -322,6 +422,58 @@
         console.log("[Hammy Menu] setDivCss:", label, { length: css.length });
       }
 
+      function findFrameDocument(match) {
+        try {
+          const topDoc = window.top.document;
+          const frames = Array.from(topDoc.querySelectorAll("iframe,frame"));
+          for (const frame of frames) {
+            try {
+              const doc = frame.contentDocument || frame.contentWindow?.document;
+              const href = doc?.location?.href || "";
+              if (doc && match(href)) return doc;
+            } catch {}
+          }
+        } catch {}
+        return null;
+      }
+
+      function injectFrameStyle(doc, id, css) {
+        if (!doc) return false;
+        try {
+          let style = doc.getElementById(id);
+          if (!style) {
+            style = doc.createElement("style");
+            style.id = id;
+            (doc.head || doc.documentElement).appendChild(style);
+          }
+          style.textContent = css;
+          return true;
+        } catch {
+          return false;
+        }
+      }
+
+      function removeFrameStyle(doc, id) {
+        try { doc?.getElementById(id)?.remove(); } catch {}
+      }
+
+      function applyFrameStyles() {
+        const chatDoc = findFrameDocument(href => href.includes("nui://chat/"));
+        const playerDoc = findFrameDocument(href => href.includes("nui://es_playerlist/"));
+
+        const chatOk = injectFrameStyle(chatDoc, "hammy-chat-theme", CHAT_FRAME_CSS);
+        const playerOk = injectFrameStyle(playerDoc, "hammy-playerlist-theme", PLAYERLIST_FRAME_CSS);
+
+        return { chatOk, playerOk };
+      }
+
+      function resetFrameStyles() {
+        const chatDoc = findFrameDocument(href => href.includes("nui://chat/"));
+        const playerDoc = findFrameDocument(href => href.includes("nui://es_playerlist/"));
+        removeFrameStyle(chatDoc, "hammy-chat-theme");
+        removeFrameStyle(playerDoc, "hammy-playerlist-theme");
+      }
+
       function applyStyles() {
         if (!state.settings.enabled) {
           setStatus("Styling disabled", "Enable HUD styling first.", "error");
@@ -329,9 +481,11 @@
         }
 
         sendCss(FULL_CSS, "full");
+        const frameResult = applyFrameStyles();
         setStatus(
           "Styles sent",
-          "Sent the Hammy HUD/menu stylesheet to TT via setDivCss.",
+          "Menus styled. Chat: " + (frameResult.chatOk ? "OK" : "not found") +
+            " · Player List: " + (frameResult.playerOk ? "OK" : "not found"),
           "ok"
         );
 
@@ -562,6 +716,7 @@
 
       function resetStyles() {
         sendCss("", "reset");
+        resetFrameStyles();
         setStatus(
           "Injected CSS cleared",
           "Sent an empty additional_css stylesheet to TT.",
@@ -678,6 +833,10 @@
       renderCounters();
 
       window.parent.postMessage({ type: "getData" }, "*");
+
+      setInterval(() => {
+        if (state.settings.enabled) applyFrameStyles();
+      }, 1500);
 
       setTimeout(() => {
         if (state.settings.enabled && state.settings.autoApply) {
