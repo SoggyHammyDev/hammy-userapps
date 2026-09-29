@@ -81,7 +81,7 @@
     }
     .hint strong{color:#cdeeff}
     .toggle-btn{
-      position:fixed;right:24px;bottom:24px;width:40px;height:40px;
+      position:fixed;right:24px;bottom:76px;width:40px;height:40px;
       display:grid;place-items:center;padding:0;z-index:9999;
       border:1px solid rgba(56,189,248,.18);border-radius:11px;
       background:linear-gradient(145deg,rgba(8,12,18,.97),rgba(17,24,35,.985));
@@ -97,7 +97,7 @@
       <div class="brand">
         <div class="icon">☰</div>
         <div>
-          <div class="title">Hammy Menu Styler <span>v0.7</span></div>
+          <div class="title">Hammy Menu Styler <span>v0.8</span></div>
           <div class="subtitle">TT UI Theme</div>
         </div>
       </div>
@@ -172,9 +172,18 @@
           font-weight:800!important;
           text-shadow:none!important;
         }
-        .div_money{border-color:rgba(52,211,153,.18)!important}
-        .div_bmoney{border-color:rgba(56,189,248,.18)!important}
-        .div_job{border-color:rgba(251,191,36,.18)!important}
+        .div_money{
+          top:35px!important;right:10px!important;
+          border-color:rgba(52,211,153,.18)!important
+        }
+        .div_bmoney{
+          top:72px!important;right:10px!important;
+          border-color:rgba(56,189,248,.18)!important
+        }
+        .div_job{
+          top:109px!important;right:10px!important;
+          border-color:rgba(251,191,36,.18)!important
+        }
 
         .menu{
           background:rgba(8,12,18,.97)!important;
@@ -241,14 +250,32 @@
         .chat-input{
           background:var(--hammy-panel)!important;
           border:1px solid rgba(56,189,248,.20)!important;border-radius:10px!important;
-          box-shadow:0 10px 26px rgba(0,0,0,.30)!important;overflow:hidden!important;
+          box-shadow:0 10px 26px rgba(0,0,0,.30)!important;
+          overflow:visible!important;
+          padding:6px!important;
+        }
+        .chat-window-wrapper{
+          margin:0!important;
+        }
+        .chat-btn-wrapper{
+          margin:0 0 5px!important;
         }
         .chat-input textarea{
-          color:var(--hammy-text)!important;background:transparent!important;border:0!important;
-          padding:7px 9px 7px 28px!important;font-size:1rem!important;resize:none!important;
+          color:var(--hammy-text)!important;
+          background:rgba(255,255,255,.035)!important;
+          border:1px solid rgba(255,255,255,.07)!important;
+          border-radius:7px!important;
+          padding:6px 9px 6px 28px!important;
+          font-size:1rem!important;
+          height:34px!important;
+          resize:none!important;
         }
         .chat-input textarea::placeholder{color:var(--hammy-muted)!important}
-        .prefix{color:var(--hammy-cyan)!important}
+        .prefix{
+          color:var(--hammy-cyan)!important;
+          left:10px!important;
+          margin-top:6px!important;
+        }
         .suggestions{
           background:var(--hammy-panel)!important;color:var(--hammy-text)!important;
           border-top:1px solid var(--hammy-line)!important;
