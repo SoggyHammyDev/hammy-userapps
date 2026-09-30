@@ -22,6 +22,29 @@ const JOBS = [
   { key:"hunter", label:"Hunting", exp:"exp_hunting_skill", bxp:"exp_token_a|hunting|skill", jobs:["hunter"] }
 ];
 
+const PERK_CAP_XP = 1000000;
+const PERK_INFO = {
+  trucker:"Item processing speed +50%",
+  mechanic:"Use Repair Kits without being a mechanic",
+  garbage:"Faster walking with a trash bag",
+  postop:"Trunk and storage capacity +15%",
+  pilot:"Earn an additional 5% XP",
+  helicopterpilot:"Factions receive twice the TAX credits",
+  cargopilot:"Convert 50% of earned XP to BXP while active",
+  busdriver:"Sacrifice pay for an extra 50% XP",
+  conductor:"Redeem Business Cash Stacks twice as fast",
+  emergency:"Obtain a Pill with each paycheck",
+  firefighter:"Ignore faction tax when earning money",
+  player:"Earn an additional $50k each paycheck",
+  racer:"Garage-spawned cars receive a 30% boost when eligible",
+  farmer:"Obtain 10 fertilizer with each paycheck",
+  fisher:"Fishing pots fill twice as fast and do not degrade",
+  miner:"Stock does not diminish when processing items",
+  strength:"Twice as much inventory capacity",
+  business:"Spawn a Sanchez instead of a pedal bike",
+  hunter:"Immediately gut hunted animals into meat"
+};
+
 const KEYS = [...new Set([
   ...JOBS.map(j => j.exp),
   "inventory","job","job_name","job_title","subjob","subjob_name"
@@ -36,7 +59,7 @@ const STORE = {
 };
 
 const DEFAULT_SETTINGS = {
-  level:true,bxp:true,gain:true,rate:true,eta:true,progress:true,highlightActive:true,autoSelectJob:true,fontSize:11
+  level:true,bxp:true,gain:true,rate:true,eta:true,progress:true,perk:true,highlightActive:true,autoSelectJob:true,fontSize:11
 };
 
 const JOB_SKILL_MAP = {
@@ -163,6 +186,7 @@ function applySettingsToInputs(){
   $("show-rate").checked = state.settings.rate;
   $("show-eta").checked = state.settings.eta;
   $("show-progress").checked = state.settings.progress;
+  $("show-perk").checked = state.settings.perk;
   $("highlight-active").checked = state.settings.highlightActive;
   $("auto-select-job").checked = state.settings.autoSelectJob;
   $("font-size").value = state.settings.fontSize;
@@ -178,6 +202,7 @@ function saveSettings(){
     rate:$("show-rate").checked,
     eta:$("show-eta").checked,
     progress:$("show-progress").checked,
+    perk:$("show-perk").checked,
     highlightActive:$("highlight-active").checked,
     autoSelectJob:$("auto-select-job").checked,
     fontSize:Number($("font-size").value)||11
@@ -228,6 +253,73 @@ function rollingRate(jobKey){
   const dx = last.exp - first.exp;
   if (dt <= 0 || dx <= 0) return 0;
   return dx / dt * 3600000;
+}
+
+function latestXpGain(jobKey){
+  const log = state.logs[jobKey] || [];
+  if (log.length < 2) return 0;
+  const last = log[log.length-1];
+  const previous = log[log.length-2];
+  const gain = Number(last?.exp) - Number(previous?.exp);
+  return Number.isFinite(gain) && gain > 0 ? gain : 0;
+}
+
+function perkEstimate(jobKey){
+  const xp = Number(state.xp[jobKey]);
+  if (!Number.isFinite(xp)) return null;
+
+  const remaining = Math.max(0, PERK_CAP_XP - xp);
+  const earned = latestXpGain(jobKey);
+  const guaranteed = xp >= PERK_CAP_XP;
+
+  let chance = null;
+  if (guaranteed) chance = 1;
+  else if (earned > 0 && remaining > 0) chance = Math.max(0, Math.min(1, earned / remaining));
+
+  const milestone = probability => Math.min(PERK_CAP_XP, Math.round(xp + remaining * probability));
+  return {
+    xp,
+    remaining,
+    earned,
+    guaranteed,
+    chance,
+    odds: chance && chance > 0 ? 1 / chance : null,
+    milestones:{
+      p50:milestone(.50),
+      p75:milestone(.75),
+      p90:milestone(.90),
+      p95:milestone(.95),
+      p99:milestone(.99)
+    },
+    benefit:PERK_INFO[jobKey] || ""
+  };
+}
+
+function formatPerkChance(value){
+  if (!Number.isFinite(value)) return "—";
+  const pct = value * 100;
+  if (pct >= 99.995) return "100%";
+  if (pct >= 10) return pct.toFixed(1).replace(/\.0$/,"") + "%";
+  if (pct >= 1) return pct.toFixed(2).replace(/0$/,"").replace(/\.0$/,"") + "%";
+  return pct.toFixed(3).replace(/0+$/,"").replace(/\.$/,"") + "%";
+}
+
+function formatPerkOdds(value){
+  if (!Number.isFinite(value) || value <= 0) return "—";
+  if (value <= 1.0005) return "1 in 1";
+  const digits = value < 10 ? 1 : 0;
+  return "1 in " + value.toFixed(digits);
+}
+
+function perkTitle(job, perk){
+  if (!perk) return "";
+  const bits = [];
+  if (perk.benefit) bits.push(job.label + " perk: " + perk.benefit);
+  if (perk.guaranteed) bits.push("At or above 1,000,000 XP: guaranteed if the perk has not already dropped.");
+  else if (perk.earned > 0) bits.push("Next-roll estimate uses the last observed XP gain of " + formatNumber(perk.earned) + " XP.");
+  else bits.push("Complete one XP-paying action so the tracker can learn your Earned EXP amount.");
+  bits.push("Cumulative milestone XP from now: 50% " + formatNumber(perk.milestones.p50) + ", 75% " + formatNumber(perk.milestones.p75) + ", 90% " + formatNumber(perk.milestones.p90) + ", 95% " + formatNumber(perk.milestones.p95) + ", 99% " + formatNumber(perk.milestones.p99) + ".");
+  return bits.join(" ");
 }
 
 function sessionGain(jobKey){
@@ -397,6 +489,7 @@ function render(){
   if (state.settings.rate) cols.push({key:"rate",label:"XP/hr"});
   if (state.settings.eta) cols.push({key:"eta",label:"Next lvl ETA"});
   if (state.settings.progress) cols.push({key:"progress",label:"Progress"});
+  if (state.settings.perk) cols.push({key:"perk",label:"Perk next"});
 
   $("summary-head").innerHTML = "<tr>"+cols.map(c=>"<th>"+c.label+"</th>").join("")+"</tr>";
 
@@ -419,6 +512,7 @@ function render(){
     const rate = rollingRate(job.key);
     const eta = rate > 0 && lvl.needed > 0 ? lvl.needed/rate*3600000 : null;
     const isActive = state.settings.highlightActive && active===job.key;
+    const perk = perkEstimate(job.key);
 
     const cells = cols.map(col => {
       if (col.key==="skill") return '<td><span class="skill-name">'+job.label+'</span><span class="skill-key">'+job.exp.replace("exp_","")+'</span></td>';
@@ -429,6 +523,12 @@ function render(){
       if (col.key==="rate") return '<td class="'+(rate>0?"rate":"muted")+'">'+formatNumber(rate)+'</td>';
       if (col.key==="eta") return '<td class="muted">'+(eta===null?"—":formatDuration(eta))+'</td>';
       if (col.key==="progress") return '<td class="progress-cell"><div class="progress-wrap"><div class="bar"><span style="width:'+lvl.pct.toFixed(1)+'%"></span></div><span class="pct">'+lvl.pct.toFixed(1)+'%</span></div></td>';
+      if (col.key==="perk") {
+        if (!perk) return '<td class="perk-cell muted">—</td>';
+        if (perk.guaranteed) return '<td class="perk-cell" title="'+perkTitle(job,perk)+'"><span class="perk-chance guaranteed">Guaranteed</span><span class="perk-meta">1M XP reached</span></td>';
+        if (!Number.isFinite(perk.chance)) return '<td class="perk-cell" title="'+perkTitle(job,perk)+'"><span class="perk-chance muted">Learning…</span><span class="perk-meta">needs 1 XP gain</span></td>';
+        return '<td class="perk-cell" title="'+perkTitle(job,perk)+'"><span class="perk-chance">'+formatPerkChance(perk.chance)+'</span><span class="perk-meta">'+formatPerkOdds(perk.odds)+' · 50% @ '+formatNumber(perk.milestones.p50)+'</span></td>';
+      }
       return "<td>—</td>";
     }).join("");
 
@@ -466,7 +566,7 @@ function setupUi(){
   });
   $("select-all").addEventListener("click",()=>{state.selected=JOBS.map(j=>j.key);localStorage.setItem(STORE.selected,JSON.stringify(state.selected));renderPicker();render()});
   $("select-none").addEventListener("click",()=>{state.selected=[];localStorage.setItem(STORE.selected,"[]");renderPicker();render()});
-  ["show-level","show-bxp","show-gain","show-rate","show-eta","show-progress","highlight-active","auto-select-job"].forEach(id=>$(id).addEventListener("change",()=>{
+  ["show-level","show-bxp","show-gain","show-rate","show-eta","show-progress","show-perk","highlight-active","auto-select-job"].forEach(id=>$(id).addEventListener("change",()=>{
     saveSettings();
     if (id === "auto-select-job" && $("auto-select-job").checked) autoSelectForCurrentJob(true);
   }));
