@@ -10,48 +10,49 @@
 </head>
 <body>
   <section id="app" class="mw2-app" aria-label="Hammy MW2 Menu">
-    <div class="noise" aria-hidden="true"></div>
+    <div class="scene" aria-hidden="true">
+      <div class="smoke smoke-a"></div>
+      <div class="smoke smoke-b"></div>
+      <div class="warm-glow"></div>
+      <div class="operator-silhouette"></div>
+      <div class="grain"></div>
+    </div>
 
-    <header id="dragHandle" class="mw2-header">
-      <div>
-        <div class="eyebrow">TRANSPORT TYCOON</div>
-        <div class="title-row">
-          <h1>HAMMY <span>MENU</span></h1>
-          <span class="version">v1.0</span>
-        </div>
-        <div id="breadcrumb" class="breadcrumb">MULTIPLAYER  /  TT TOOLS</div>
+    <div id="dragHandle" class="menu-slab">
+      <div class="menu-inner">
+        <div class="campaign-title">"HAMMY TOOLS"</div>
+        <div class="campaign-subtitle">TRANSPORT TYCOON</div>
+
+        <nav aria-label="MW2 menu">
+          <div id="menuList" class="menu-list"></div>
+        </nav>
+
+        <div id="selectedDescription" class="selected-description"></div>
       </div>
+    </div>
 
-      <div class="header-status">
-        <span id="pinState" class="pin-state">UNPINNED</span>
-        <span class="online-dot"></span>
-      </div>
-    </header>
+    <div class="brand-mark" aria-hidden="true">
+      <span>HAMMY</span>
+      <strong>TT</strong>
+    </div>
 
-    <main class="menu-layout">
-      <nav class="menu-column" aria-label="Main menu">
-        <div id="menuList" class="menu-list"></div>
-      </nav>
+    <div class="bottom-help">
+      <span><kbd>↑</kbd><kbd>↓</kbd> MOVE</span>
+      <span><kbd>ENTER</kbd> SELECT</span>
+      <span><kbd>ESC</kbd> PIN</span>
+    </div>
 
-      <section id="detailPanel" class="detail-panel" aria-live="polite">
-        <div class="detail-kicker">INTEL</div>
-        <h2 id="detailTitle">TT TOOLBOX</h2>
-        <p id="detailDescription">Select a category to view details.</p>
+    <div class="status-corner">
+      <span id="pinState">UNPINNED</span>
+      <span id="clock">00:00</span>
+    </div>
 
-        <div id="detailBody" class="detail-body"></div>
-
-        <button id="primaryAction" class="mw2-action" type="button">SELECT</button>
-      </section>
-    </main>
-
-    <footer class="mw2-footer">
-      <div class="controls">
-        <span><kbd>↑</kbd><kbd>↓</kbd> NAVIGATE</span>
-        <span><kbd>ENTER</kbd> SELECT</span>
-        <span><kbd>ESC</kbd> PIN / UNPIN</span>
-      </div>
-      <div id="clock" class="clock">00:00</div>
-    </footer>
+    <section id="detailPanel" class="sr-only" aria-live="polite">
+      <h2 id="detailTitle"></h2>
+      <p id="detailDescription"></p>
+      <div id="detailBody"></div>
+      <button id="primaryAction" type="button">SELECT</button>
+    </section>
   </section>
 
   <button id="showButton" class="show-button hidden" type="button" aria-label="Open Hammy MW2 Menu">H</button>
