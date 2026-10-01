@@ -17,6 +17,7 @@
   const pinState = document.getElementById("pinState");
   const showButton = document.getElementById("showButton");
   const clock = document.getElementById("clock");
+  const selectedDescription = document.getElementById("selectedDescription");
 
   const state = {
     selected: 0,
@@ -114,154 +115,162 @@
 
   const MW2_CSS = `
     :root{
-      --hammy-mw2-text:#e8ecdf;
-      --hammy-mw2-muted:#9da391;
-      --hammy-mw2-green:#a8ba80;
-      --hammy-mw2-orange:#d69647;
-      --hammy-mw2-bg:rgba(11,13,12,.965);
-      --hammy-mw2-panel:rgba(29,32,27,.94);
+      --hammy-mw2-text:#f0f0eb;
+      --hammy-mw2-muted:rgba(240,240,235,.58);
     }
 
     .menu{
       overflow:visible!important;
-      background:var(--hammy-mw2-bg)!important;
-      border:1px solid rgba(225,232,211,.13)!important;
+      min-width:300px!important;
+      padding:26px 0 18px!important;
+      background:linear-gradient(90deg,rgba(45,45,42,.16),rgba(30,30,28,.31))!important;
+      border:0!important;
+      border-right:1px solid rgba(255,255,255,.05)!important;
       border-radius:0!important;
-      box-shadow:0 16px 44px rgba(0,0,0,.48)!important;
+      box-shadow:none!important;
       color:var(--hammy-mw2-text)!important;
-      font-family:Arial,Helvetica,sans-serif!important;
-      text-shadow:0 1px 3px rgba(0,0,0,.7)!important;
+      font-family:"Arial Narrow",Arial,Helvetica,sans-serif!important;
+      text-shadow:0 1px 3px rgba(0,0,0,.68)!important;
     }
 
     .menu:before{
-      content:"MULTIPLAYER  /  TRANSPORT TYCOON";
+      content:"TRANSPORT TYCOON"!important;
       display:block!important;
-      padding:7px 13px 5px!important;
-      color:#939989!important;
-      background:rgba(255,255,255,.018)!important;
-      border-bottom:1px solid rgba(255,255,255,.055)!important;
-      font-size:9px!important;
+      margin:0 12px 2px 22px!important;
+      padding:0!important;
+      color:rgba(255,255,255,.52)!important;
+      background:transparent!important;
+      border:0!important;
+      font-size:8px!important;
       font-weight:700!important;
-      letter-spacing:.12em!important;
+      letter-spacing:.16em!important;
+      text-align:right!important;
     }
 
     .menu h1{
-      position:relative!important;
-      margin:0!important;
-      padding:11px 13px 10px!important;
+      margin:0 12px 12px 22px!important;
+      padding:0!important;
       border:0!important;
-      border-bottom:1px solid rgba(225,232,211,.11)!important;
       border-radius:0!important;
-      background:
-        linear-gradient(90deg,rgba(116,128,94,.12),transparent 66%),
-        rgba(21,24,20,.96)!important;
-      color:#f0f2e8!important;
-      font-size:17px!important;
+      background:transparent!important;
+      color:#fafaf7!important;
+      font-size:20px!important;
       font-weight:700!important;
-      line-height:1.05!important;
-      letter-spacing:.01em!important;
-      text-align:left!important;
-      text-shadow:0 2px 8px rgba(0,0,0,.75)!important;
+      line-height:1!important;
+      letter-spacing:.04em!important;
+      text-align:right!important;
+      text-transform:uppercase!important;
+      text-shadow:0 1px 3px rgba(0,0,0,.64)!important;
     }
 
     .menu .choices{
-      padding:8px 0!important;
-      background:
-        repeating-linear-gradient(0deg,rgba(255,255,255,.009) 0 1px,transparent 1px 3px),
-        rgba(13,15,13,.97)!important;
+      padding:0!important;
+      background:transparent!important;
     }
 
     .menu .choices > div{
       position:relative!important;
-      min-height:30px!important;
-      margin:2px 0!important;
-      padding:7px 13px 7px 17px!important;
+      min-height:28px!important;
+      margin:0!important;
+      padding:6px 14px 6px 18px!important;
       border:0!important;
-      border-left:3px solid transparent!important;
       border-radius:0!important;
-      background:rgba(255,255,255,.018)!important;
-      color:#d7dbcf!important;
-      font-size:12px!important;
-      font-weight:700!important;
-      line-height:1.25!important;
-      transition:background .07s linear,color .07s linear,padding-left .07s linear!important;
+      background:transparent!important;
+      color:rgba(247,247,242,.9)!important;
+      font-size:13px!important;
+      font-weight:400!important;
+      line-height:1.2!important;
+      text-align:right!important;
+      text-transform:uppercase!important;
+      transition:none!important;
+    }
+
+    .menu .choices > div:before{
+      content:""!important;
+      position:absolute!important;
+      left:-34px!important;
+      right:0!important;
+      bottom:0!important;
+      height:1px!important;
+      background:transparent!important;
     }
 
     .menu .choices > div:hover,
     .menu .choices > div.selected{
-      padding-left:22px!important;
-      border-left-color:#bfd394!important;
-      background:
-        linear-gradient(90deg,rgba(155,174,117,.31),rgba(109,121,89,.13) 72%,transparent)!important;
-      color:#fbfcf7!important;
-      box-shadow:
-        inset 0 1px rgba(229,238,211,.07),
-        inset 0 -1px rgba(0,0,0,.34)!important;
+      padding:6px 14px 6px 18px!important;
+      border:0!important;
+      background:transparent!important;
+      color:#fff!important;
+      box-shadow:none!important;
+    }
+
+    .menu .choices > div:hover:before,
+    .menu .choices > div.selected:before{
+      background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.40) 68%,rgba(255,255,255,.19))!important;
+      box-shadow:0 1px 5px rgba(255,255,255,.08)!important;
     }
 
     .menu .choices > div.selected:after{
-      content:"";
-      position:absolute!important;
-      left:0!important;
-      top:0!important;
-      bottom:0!important;
-      width:100%!important;
-      pointer-events:none!important;
-      background:linear-gradient(90deg,rgba(229,238,211,.035),transparent 58%)!important;
+      display:none!important;
     }
 
     .menu .choices > div div,
     .menu .choices > div span{
       color:inherit!important;
       border-radius:0!important;
+      text-align:right!important;
     }
 
     .menu_description{
-      padding:9px 12px!important;
-      background:rgba(13,15,13,.965)!important;
-      border:1px solid rgba(225,232,211,.12)!important;
+      margin-top:8px!important;
+      padding:7px 12px!important;
+      background:rgba(30,30,28,.18)!important;
+      border:0!important;
+      border-top:1px solid rgba(255,255,255,.08)!important;
       border-radius:0!important;
-      box-shadow:0 12px 34px rgba(0,0,0,.42)!important;
-      color:#aeb4a3!important;
-      font-family:Arial,Helvetica,sans-serif!important;
-      font-size:10px!important;
-      line-height:1.42!important;
-      text-shadow:0 1px 3px rgba(0,0,0,.7)!important;
+      box-shadow:none!important;
+      color:rgba(255,255,255,.54)!important;
+      font-family:"Arial Narrow",Arial,Helvetica,sans-serif!important;
+      font-size:8px!important;
+      line-height:1.35!important;
+      text-align:right!important;
+      text-transform:uppercase!important;
+      text-shadow:0 1px 2px rgba(0,0,0,.6)!important;
     }
 
     .div_money,.div_bmoney,.div_job{
-      right:12px!important;
-      width:145px!important;
-      min-width:145px!important;
-      min-height:34px!important;
-      height:34px!important;
-      padding:0 10px!important;
+      right:10px!important;
+      width:140px!important;
+      min-width:140px!important;
+      min-height:28px!important;
+      height:28px!important;
+      padding:0 8px!important;
       display:flex!important;
       align-items:center!important;
       justify-content:flex-end!important;
-      gap:7px!important;
-      border:1px solid rgba(225,232,211,.11)!important;
-      border-left:3px solid rgba(168,186,128,.66)!important;
+      gap:6px!important;
+      border:0!important;
+      border-bottom:1px solid rgba(255,255,255,.13)!important;
       border-radius:0!important;
-      background:rgba(12,14,12,.94)!important;
-      box-shadow:0 8px 22px rgba(0,0,0,.34)!important;
-      color:#e7eadf!important;
-      font-family:Arial,Helvetica,sans-serif!important;
-      font-size:12px!important;
-      font-weight:700!important;
+      background:rgba(32,32,30,.24)!important;
+      box-shadow:none!important;
+      color:rgba(248,248,243,.92)!important;
+      font-family:"Arial Narrow",Arial,Helvetica,sans-serif!important;
+      font-size:11px!important;
+      font-weight:400!important;
       text-shadow:0 1px 3px rgba(0,0,0,.7)!important;
     }
 
     .div_money{top:48px!important}
-    .div_bmoney{top:84px!important}
-    .div_job{top:120px!important;border-left-color:rgba(214,150,71,.72)!important}
+    .div_bmoney{top:78px!important}
+    .div_job{top:108px!important}
 
     .div_money .symbol,.div_bmoney .symbol{
-      width:25px!important;
-      height:25px!important;
+      width:22px!important;
+      height:22px!important;
       object-fit:contain!important;
       flex:none!important;
-      filter:saturate(.68) brightness(1.08)!important;
+      filter:grayscale(.35) brightness(1.05)!important;
     }
   `;
 
@@ -508,6 +517,7 @@
     const selected = items[state.selected];
     detailTitle.textContent = selected.title;
     detailDescription.textContent = selected.description;
+    if (selectedDescription) selectedDescription.textContent = selected.description;
 
     if (selected.id === "settings") {
       renderSettings();
