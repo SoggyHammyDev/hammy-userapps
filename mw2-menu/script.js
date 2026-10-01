@@ -18,6 +18,7 @@
   const showButton = document.getElementById("showButton");
   const clock = document.getElementById("clock");
   const selectedDescription = document.getElementById("selectedDescription");
+  const closeButton = document.getElementById("closeButton");
 
   const state = {
     selected: 0,
@@ -688,6 +689,13 @@
 
   primaryAction.addEventListener("click", activate);
   showButton.addEventListener("click", show);
+  if (closeButton) {
+    closeButton.addEventListener("mousedown", event => event.stopPropagation());
+    closeButton.addEventListener("click", event => {
+      event.stopPropagation();
+      hide();
+    });
+  }
 
   setInterval(() => {
     const now = new Date();
