@@ -201,25 +201,45 @@
         }
 
         .menu{
-          overflow:visible!important;
-          min-width:300px!important;
+          overflow:hidden!important;
+          min-width:320px!important;
           padding:26px 0 18px!important;
-          background:linear-gradient(90deg,rgba(45,45,42,.16),rgba(30,30,28,.31))!important;
-          border:0!important;
-          border-right:1px solid rgba(255,255,255,.05)!important;
+          background:
+            linear-gradient(90deg,rgba(92,92,87,.90),rgba(66,66,62,.93) 72%,rgba(56,56,53,.95))!important;
+          border:1px solid rgba(255,255,255,.08)!important;
           border-radius:0!important;
-          box-shadow:none!important;
+          box-shadow:
+            0 14px 38px rgba(0,0,0,.28),
+            inset 0 1px rgba(255,255,255,.035)!important;
           color:var(--hammy-mw2-text)!important;
           font-family:"Arial Narrow",Arial,Helvetica,sans-serif!important;
           text-shadow:0 1px 3px rgba(0,0,0,.68)!important;
         }
 
+        .menu:after{
+          content:""!important;
+          position:absolute!important;
+          inset:0!important;
+          pointer-events:none!important;
+          background:
+            repeating-linear-gradient(
+              0deg,
+              rgba(255,255,255,.012) 0,
+              rgba(255,255,255,.012) 1px,
+              transparent 1px,
+              transparent 3px
+            )!important;
+          opacity:.34!important;
+        }
+
         .menu:before{
           content:"TRANSPORT TYCOON"!important;
           display:block!important;
+          position:relative!important;
+          z-index:1!important;
           margin:0 12px 2px 22px!important;
           padding:0!important;
-          color:rgba(255,255,255,.52)!important;
+          color:rgba(255,255,255,.58)!important;
           background:transparent!important;
           border:0!important;
           font-size:8px!important;
@@ -229,6 +249,8 @@
         }
 
         .menu h1{
+          position:relative!important;
+          z-index:1!important;
           margin:0 12px 12px 22px!important;
           padding:0!important;
           border:0!important;
@@ -245,8 +267,10 @@
         }
 
         .menu .choices{
+          position:relative!important;
+          z-index:1!important;
           padding:0!important;
-          background:transparent!important;
+          background:rgba(0,0,0,.035)!important;
         }
 
         .menu .choices > div{
@@ -303,7 +327,7 @@
         .menu_description{
           margin-top:8px!important;
           padding:7px 12px!important;
-          background:rgba(30,30,28,.18)!important;
+          background:rgba(58,58,54,.92)!important;
           border:0!important;
           border-top:1px solid rgba(255,255,255,.08)!important;
           border-radius:0!important;
