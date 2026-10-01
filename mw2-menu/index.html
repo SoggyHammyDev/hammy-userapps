@@ -6,38 +6,644 @@
   <meta name="robots" content="noindex">
   <title>Hammy MW2 Menu</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="style.css?v=20260930-3">
+  <style>
+    :root{
+      --text:rgba(245,245,240,.94);
+      --muted:rgba(255,255,255,.53);
+      --faint:rgba(255,255,255,.32);
+      --line:rgba(255,255,255,.28);
+      --glass:rgba(25,25,23,.20);
+      --glass2:rgba(25,25,23,.05);
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;width:100%;height:100%;overflow:hidden;background:transparent;
+      font-family:"Arial Narrow",Arial,Helvetica,sans-serif;color:var(--text)
+    }
+    button,input{font:inherit}
+    .hidden{display:none!important}
+
+    .app{
+      position:fixed;left:18px;top:18px;width:338px;
+      background:linear-gradient(90deg,var(--glass),var(--glass2));
+      border:0;box-shadow:none;user-select:none;
+    }
+    header{
+      min-height:58px;padding:9px 10px 8px 16px;
+      display:flex;align-items:flex-start;justify-content:space-between;
+      gap:10px;cursor:move;
+    }
+    .brand{min-width:0;flex:1;text-align:right}
+    .overline{
+      color:var(--faint);font-size:8px;font-weight:700;
+      letter-spacing:.16em;text-transform:uppercase
+    }
+    .title{
+      margin-top:1px;color:#fff;font-size:19px;font-weight:700;
+      letter-spacing:.04em;text-transform:uppercase;
+      text-shadow:0 1px 3px rgba(0,0,0,.65)
+    }
+    .subtitle{
+      margin-top:2px;color:var(--muted);font-size:8px;font-weight:700;
+      letter-spacing:.14em;text-transform:uppercase
+    }
+    .header-actions{display:flex;align-items:center;gap:6px}
+    .icon-btn{
+      width:24px;height:24px;padding:0;display:grid;place-items:center;
+      border:0;background:transparent;color:rgba(255,255,255,.58);
+      cursor:pointer;font-size:18px;line-height:1
+    }
+    .icon-btn:hover{color:#fff;background:rgba(255,255,255,.06)}
+
+    main{padding:0 10px 10px 16px}
+    .settings-card{padding:0;margin:0;background:transparent;border:0}
+    .check-row{
+      position:relative;min-height:34px;display:flex;align-items:center;
+      justify-content:flex-end;gap:10px;cursor:pointer;
+      border-bottom:1px solid transparent;text-align:right
+    }
+    .check-row:hover{
+      border-bottom-color:rgba(255,255,255,.34);
+    }
+    .check-row strong{
+      display:block;color:rgba(245,245,240,.93);font-size:13px;
+      font-weight:400;letter-spacing:.02em;text-transform:uppercase;
+      text-shadow:0 1px 3px rgba(0,0,0,.65)
+    }
+    .check-row small{
+      display:block;margin-top:1px;color:rgba(255,255,255,.42);
+      font-size:7px;line-height:1.2;text-transform:uppercase
+    }
+    .check-row input{
+      width:13px;height:13px;flex:none;accent-color:#ddd;
+      opacity:.88
+    }
+    #applyBtn{
+      width:100%;min-height:31px;margin-top:10px;padding:0 4px;
+      border:0;border-bottom:1px solid rgba(255,255,255,.28);
+      background:transparent;color:#fff;cursor:pointer;text-align:right;
+      font-size:12px;font-weight:400;letter-spacing:.03em;text-transform:uppercase;
+      text-shadow:0 1px 3px rgba(0,0,0,.65)
+    }
+    #applyBtn:hover{border-bottom-color:rgba(255,255,255,.58)}
+    .hint{
+      margin-top:10px;text-align:right;color:rgba(255,255,255,.38);
+      font-size:7px;line-height:1.35;text-transform:uppercase
+    }
+    .hint strong{color:rgba(255,255,255,.62)}
+
+    .toggle-btn{
+      position:fixed;right:24px;bottom:76px;width:38px;height:38px;
+      display:grid;place-items:center;padding:0;z-index:9999;
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(28,28,26,.72);color:#fff;
+      box-shadow:0 10px 28px rgba(0,0,0,.35);
+      cursor:pointer;font-size:13px
+    }
+    .toggle-btn:hover{background:rgba(40,40,38,.82)}
+  </style>
 </head>
 <body>
-  <section id="app" class="mw2-app" aria-label="Hammy MW2 Menu">
-    <div id="dragHandle" class="floating-shell">
-      <button id="closeButton" class="close-button" type="button" title="Close" aria-label="Close MW2 Menu">×</button>
-      <div class="floating-topline">TRANSPORT TYCOON</div>
-      <div class="floating-title">"HAMMY TOOLS"</div>
-      <div class="floating-subtitle">MAIN MENU</div>
-
-      <nav class="floating-nav" aria-label="MW2 menu">
-        <div id="menuList" class="menu-list"></div>
-      </nav>
-
-      <div id="selectedDescription" class="selected-description"></div>
-
-      <div class="floating-footer">
-        <span id="pinState">UNPINNED</span>
-        <span id="clock">00:00</span>
+  <section class="app" id="app">
+    <header id="dragHandle">
+      <div class="brand">
+        <div class="overline">Transport Tycoon</div>
+        <div class="title">"Hammy Tools"</div>
+        <div class="subtitle">MW2 Menu Styler</div>
       </div>
-    </div>
+      <div class="header-actions">
+        <button id="hideBtn" class="icon-btn" type="button" title="Hide" aria-label="Hide">×</button>
+      </div>
+    </header>
 
-    <section id="detailPanel" class="sr-only" aria-live="polite">
-      <h2 id="detailTitle"></h2>
-      <p id="detailDescription"></p>
-      <div id="detailBody"></div>
-      <button id="primaryAction" type="button">SELECT</button>
-    </section>
+    <main>
+      <section class="settings-card">
+        <label class="check-row">
+          <span>
+            <strong>MW2 Theme</strong>
+            <small>Style native TT menus.</small>
+          </span>
+          <input id="enabled" type="checkbox" checked>
+        </label>
+
+        <label class="check-row">
+          <span>
+            <strong>HUD Blocks</strong>
+            <small>Theme money, bank and job.</small>
+          </span>
+          <input id="styleHud" type="checkbox" checked>
+        </label>
+
+        <label class="check-row">
+          <span>
+            <strong>Prompts</strong>
+            <small>Theme vRP text prompts.</small>
+          </span>
+          <input id="stylePrompts" type="checkbox" checked>
+        </label>
+
+        <label class="check-row">
+          <span>
+            <strong>Player List</strong>
+            <small>Theme the TT player list.</small>
+          </span>
+          <input id="stylePlayerList" type="checkbox" checked>
+        </label>
+
+        <label class="check-row">
+          <span>
+            <strong>Auto Apply</strong>
+            <small>Restore theme when the app loads.</small>
+          </span>
+          <input id="autoApply" type="checkbox" checked>
+        </label>
+      </section>
+
+      <button id="applyBtn" type="button">Apply MW2 Theme</button>
+
+      <div class="hint">
+        FiveM keybind: <strong>Toggle Hammy MW2 Menu</strong><br>
+        ESC pins/unpins this app.
+      </div>
+    </main>
   </section>
 
-  <button id="showButton" class="show-button hidden" type="button" aria-label="Open Hammy MW2 Menu">H</button>
+  <button id="showBtn" class="toggle-btn hidden" type="button"
+    title="Open Hammy MW2 Menu" aria-label="Open Hammy MW2 Menu">MW2</button>
 
-  <script src="script.js?v=20260930-4"></script>
+  <script>
+    (() => {
+      "use strict";
+
+      const POSITION_KEY = "hammyMw2Menu.position.v2";
+      const SETTINGS_KEY = "hammyMw2Menu.settings.v2";
+      const TOGGLE_TRIGGER = "hammymw2toggle";
+      const TOGGLE_TRIGGER_KEY = "trigger_" + TOGGLE_TRIGGER;
+
+      const state = {
+        settings: {
+          enabled: true,
+          styleHud: true,
+          stylePrompts: true,
+          stylePlayerList: true,
+          autoApply: true
+        },
+        keybindReady: false,
+        lastToggleTrigger: undefined
+      };
+
+      const $ = id => document.getElementById(id);
+
+      const MENU_CSS = `
+        :root{
+          --hammy-mw2-text:#f0f0eb;
+          --hammy-mw2-muted:rgba(240,240,235,.58);
+        }
+
+        .menu{
+          overflow:visible!important;
+          min-width:300px!important;
+          padding:26px 0 18px!important;
+          background:linear-gradient(90deg,rgba(45,45,42,.16),rgba(30,30,28,.31))!important;
+          border:0!important;
+          border-right:1px solid rgba(255,255,255,.05)!important;
+          border-radius:0!important;
+          box-shadow:none!important;
+          color:var(--hammy-mw2-text)!important;
+          font-family:"Arial Narrow",Arial,Helvetica,sans-serif!important;
+          text-shadow:0 1px 3px rgba(0,0,0,.68)!important;
+        }
+
+        .menu:before{
+          content:"TRANSPORT TYCOON"!important;
+          display:block!important;
+          margin:0 12px 2px 22px!important;
+          padding:0!important;
+          color:rgba(255,255,255,.52)!important;
+          background:transparent!important;
+          border:0!important;
+          font-size:8px!important;
+          font-weight:700!important;
+          letter-spacing:.16em!important;
+          text-align:right!important;
+        }
+
+        .menu h1{
+          margin:0 12px 12px 22px!important;
+          padding:0!important;
+          border:0!important;
+          border-radius:0!important;
+          background:transparent!important;
+          color:#fafaf7!important;
+          font-size:20px!important;
+          font-weight:700!important;
+          line-height:1!important;
+          letter-spacing:.04em!important;
+          text-align:right!important;
+          text-transform:uppercase!important;
+          text-shadow:0 1px 3px rgba(0,0,0,.64)!important;
+        }
+
+        .menu .choices{
+          padding:0!important;
+          background:transparent!important;
+        }
+
+        .menu .choices > div{
+          position:relative!important;
+          min-height:28px!important;
+          margin:0!important;
+          padding:6px 14px 6px 18px!important;
+          border:0!important;
+          border-radius:0!important;
+          background:transparent!important;
+          color:rgba(247,247,242,.9)!important;
+          font-size:13px!important;
+          font-weight:400!important;
+          line-height:1.2!important;
+          text-align:right!important;
+          text-transform:uppercase!important;
+          transition:none!important;
+        }
+
+        .menu .choices > div:before{
+          content:""!important;
+          position:absolute!important;
+          left:-34px!important;
+          right:0!important;
+          bottom:0!important;
+          height:1px!important;
+          background:transparent!important;
+        }
+
+        .menu .choices > div:hover,
+        .menu .choices > div.selected{
+          padding:6px 14px 6px 18px!important;
+          border:0!important;
+          background:transparent!important;
+          color:#fff!important;
+          box-shadow:none!important;
+        }
+
+        .menu .choices > div:hover:before,
+        .menu .choices > div.selected:before{
+          background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.40) 68%,rgba(255,255,255,.19))!important;
+          box-shadow:0 1px 5px rgba(255,255,255,.08)!important;
+        }
+
+        .menu .choices > div.selected:after{display:none!important}
+
+        .menu .choices > div div,
+        .menu .choices > div span{
+          color:inherit!important;
+          border-radius:0!important;
+          text-align:right!important;
+        }
+
+        .menu_description{
+          margin-top:8px!important;
+          padding:7px 12px!important;
+          background:rgba(30,30,28,.18)!important;
+          border:0!important;
+          border-top:1px solid rgba(255,255,255,.08)!important;
+          border-radius:0!important;
+          box-shadow:none!important;
+          color:rgba(255,255,255,.54)!important;
+          font-family:"Arial Narrow",Arial,Helvetica,sans-serif!important;
+          font-size:8px!important;
+          line-height:1.35!important;
+          text-align:right!important;
+          text-transform:uppercase!important;
+          text-shadow:0 1px 2px rgba(0,0,0,.6)!important;
+        }
+      `;
+
+      const HUD_CSS = `
+        .div_money,.div_bmoney,.div_job{
+          right:10px!important;
+          width:140px!important;
+          min-width:140px!important;
+          min-height:28px!important;
+          height:28px!important;
+          padding:0 8px!important;
+          display:flex!important;
+          align-items:center!important;
+          justify-content:flex-end!important;
+          gap:6px!important;
+          border:0!important;
+          border-bottom:1px solid rgba(255,255,255,.13)!important;
+          border-radius:0!important;
+          background:rgba(32,32,30,.24)!important;
+          box-shadow:none!important;
+          color:rgba(248,248,243,.92)!important;
+          font-family:"Arial Narrow",Arial,Helvetica,sans-serif!important;
+          font-size:11px!important;
+          font-weight:400!important;
+          text-shadow:0 1px 3px rgba(0,0,0,.7)!important;
+        }
+        .div_money{top:48px!important}
+        .div_bmoney{top:78px!important}
+        .div_job{top:108px!important}
+        .div_money .symbol,.div_bmoney .symbol{
+          width:22px!important;height:22px!important;object-fit:contain!important;
+          flex:none!important;filter:grayscale(.35) brightness(1.05)!important;
+        }
+      `;
+
+      const PROMPT_CSS = `
+        .wprompt{
+          width:440px!important;
+          height:170px!important;
+          padding:10px!important;
+          gap:7px!important;
+          background:linear-gradient(90deg,rgba(45,45,42,.22),rgba(30,30,28,.34))!important;
+          border:0!important;
+          border-right:1px solid rgba(255,255,255,.07)!important;
+          border-radius:0!important;
+          box-shadow:none!important;
+          color:#f0f0eb!important;
+          font-family:"Arial Narrow",Arial,Helvetica,sans-serif!important;
+          overflow:hidden!important;
+        }
+        .wprompt h1{
+          margin:0!important;padding:0 2px 7px!important;color:#fafaf7!important;
+          font-size:13px!important;font-weight:700!important;line-height:1.25!important;
+          border-bottom:1px solid rgba(255,255,255,.16)!important;
+          text-transform:uppercase!important;text-align:right!important;
+          text-shadow:0 1px 3px rgba(0,0,0,.65)!important;
+        }
+        .wprompt textarea{
+          flex:1 1 auto!important;min-height:78px!important;width:100%!important;
+          padding:9px 10px!important;background:rgba(255,255,255,.025)!important;
+          border:0!important;border-bottom:1px solid rgba(255,255,255,.20)!important;
+          border-radius:0!important;color:#f0f0eb!important;
+          font-family:"Arial Narrow",Arial,Helvetica,sans-serif!important;
+          font-size:12px!important;line-height:1.35!important;box-sizing:border-box!important;
+          resize:none!important;outline:none!important;box-shadow:none!important;
+        }
+        .wprompt .help{
+          margin:0!important;padding:0 2px!important;color:rgba(255,255,255,.45)!important;
+          font-size:8px!important;font-style:normal!important;line-height:1.3!important;
+          text-align:right!important;text-transform:uppercase!important;text-shadow:none!important;
+        }
+      `;
+
+      const PLAYERLIST_CSS = `
+        #playerlist{
+          border:0!important;border-right:1px solid rgba(255,255,255,.07)!important;
+          border-radius:0!important;overflow:hidden!important;padding:0!important;
+          color:#f0f0eb!important;
+          background:linear-gradient(90deg,rgba(45,45,42,.22),rgba(30,30,28,.34))!important;
+          box-shadow:none!important;
+          font-family:"Arial Narrow",Arial,Helvetica,sans-serif!important;
+          font-size:13px!important;
+        }
+        #playerlist .titles{
+          background:transparent!important;border-bottom:1px solid rgba(255,255,255,.14)!important;
+          margin:0!important;padding:5px 4px!important;color:rgba(255,255,255,.58)!important;
+          font-size:11px!important;font-weight:700!important;text-transform:uppercase!important;
+        }
+        #playerlist .player{
+          background:transparent!important;border-bottom:1px solid rgba(255,255,255,.055)!important;
+          font-size:12px!important;font-weight:400!important;
+        }
+        #playerlist .player:hover{background:rgba(255,255,255,.045)!important}
+        #playerlist .player .title{color:#f0f0eb!important;text-shadow:none!important}
+        #playerlist .id{color:rgba(255,255,255,.62)!important}
+      `;
+
+      function sendCss(css) {
+        window.parent.postMessage({ type:"setDivCss", div:"additional_css", css }, "*");
+      }
+
+      function findFrameDocument(match) {
+        try {
+          const topDoc = window.top.document;
+          const frames = Array.from(topDoc.querySelectorAll("iframe,frame"));
+          for (const frame of frames) {
+            try {
+              const doc = frame.contentDocument || frame.contentWindow?.document;
+              const href = doc?.location?.href || "";
+              if (doc && match(href, doc)) return doc;
+            } catch {}
+          }
+        } catch {}
+        return null;
+      }
+
+      function injectFrameStyle(doc, id, css) {
+        if (!doc) return false;
+        try {
+          let style = doc.getElementById(id);
+          if (!style) {
+            style = doc.createElement("style");
+            style.id = id;
+            (doc.head || doc.documentElement).appendChild(style);
+          }
+          style.textContent = css;
+          return true;
+        } catch { return false; }
+      }
+
+      function removeFrameStyle(doc, id) {
+        try { doc?.getElementById(id)?.remove(); } catch {}
+      }
+
+      function applyFrameStyles() {
+        const promptDoc = findFrameDocument((href, doc) =>
+          href.includes("nui://vrp/gui/") || !!doc.querySelector(".wprompt")
+        );
+        const playerDoc = findFrameDocument((href, doc) =>
+          href.includes("nui://es_playerlist/") || !!doc.querySelector("#playerlist")
+        );
+
+        if (state.settings.stylePrompts) {
+          injectFrameStyle(promptDoc, "hammy-mw2-prompts", PROMPT_CSS);
+        } else {
+          removeFrameStyle(promptDoc, "hammy-mw2-prompts");
+        }
+
+        if (state.settings.stylePlayerList) {
+          injectFrameStyle(playerDoc, "hammy-mw2-playerlist", PLAYERLIST_CSS);
+        } else {
+          removeFrameStyle(playerDoc, "hammy-mw2-playerlist");
+        }
+      }
+
+      function resetFrameStyles() {
+        const promptDoc = findFrameDocument((href, doc) =>
+          href.includes("nui://vrp/gui/") || !!doc.querySelector(".wprompt")
+        );
+        const playerDoc = findFrameDocument((href, doc) =>
+          href.includes("nui://es_playerlist/") || !!doc.querySelector("#playerlist")
+        );
+        removeFrameStyle(promptDoc, "hammy-mw2-prompts");
+        removeFrameStyle(playerDoc, "hammy-mw2-playerlist");
+      }
+
+      function applyStyles() {
+        if (!state.settings.enabled) return;
+        sendCss(MENU_CSS + (state.settings.styleHud ? HUD_CSS : ""));
+        applyFrameStyles();
+      }
+
+      function resetStyles() {
+        sendCss("");
+        resetFrameStyles();
+      }
+
+      function saveSettings() {
+        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings)); } catch {}
+      }
+
+      function loadSettings() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null");
+          if (saved && typeof saved === "object") {
+            for (const key of Object.keys(state.settings)) {
+              if (typeof saved[key] === "boolean") state.settings[key] = saved[key];
+            }
+          }
+        } catch {}
+
+        $("enabled").checked = state.settings.enabled;
+        $("styleHud").checked = state.settings.styleHud;
+        $("stylePrompts").checked = state.settings.stylePrompts;
+        $("stylePlayerList").checked = state.settings.stylePlayerList;
+        $("autoApply").checked = state.settings.autoApply;
+      }
+
+      function hideApp() {
+        $("app").classList.add("hidden");
+        $("showBtn").classList.remove("hidden");
+      }
+
+      function showApp() {
+        $("app").classList.remove("hidden");
+        $("showBtn").classList.add("hidden");
+      }
+
+      function toggleApp() {
+        if ($("app").classList.contains("hidden")) showApp();
+        else hideApp();
+      }
+
+      function setupDrag() {
+        const app = $("app");
+        const handle = $("dragHandle");
+
+        try {
+          const saved = JSON.parse(localStorage.getItem(POSITION_KEY) || "null");
+          if (saved) {
+            app.style.left = Math.max(0, Math.min(saved.x, window.innerWidth - app.offsetWidth)) + "px";
+            app.style.top = Math.max(0, Math.min(saved.y, window.innerHeight - app.offsetHeight)) + "px";
+          }
+        } catch {}
+
+        let dragging = false;
+        let dx = 0;
+        let dy = 0;
+
+        handle.addEventListener("mousedown", event => {
+          if (event.target.closest("button,input,label")) return;
+          const rect = app.getBoundingClientRect();
+          dragging = true;
+          dx = event.clientX - rect.left;
+          dy = event.clientY - rect.top;
+          event.preventDefault();
+        });
+
+        document.addEventListener("mousemove", event => {
+          if (!dragging) return;
+          app.style.left = Math.max(0, Math.min(event.clientX - dx, window.innerWidth - app.offsetWidth)) + "px";
+          app.style.top = Math.max(0, Math.min(event.clientY - dy, window.innerHeight - app.offsetHeight)) + "px";
+        });
+
+        document.addEventListener("mouseup", () => {
+          if (!dragging) return;
+          dragging = false;
+          try {
+            localStorage.setItem(POSITION_KEY, JSON.stringify({
+              x: app.offsetLeft,
+              y: app.offsetTop
+            }));
+          } catch {}
+        });
+      }
+
+      window.addEventListener("message", event => {
+        const raw = event.data;
+        const data = raw?.data || raw;
+        if (!data || typeof data !== "object") return;
+
+        if (Object.prototype.hasOwnProperty.call(data, TOGGLE_TRIGGER_KEY)) {
+          const value = data[TOGGLE_TRIGGER_KEY];
+
+          if (
+            state.keybindReady &&
+            state.lastToggleTrigger !== undefined &&
+            value !== state.lastToggleTrigger
+          ) {
+            toggleApp();
+          }
+
+          state.lastToggleTrigger = value;
+        }
+      });
+
+      window.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+          window.parent.postMessage({ type:"pin" }, "*");
+        }
+      });
+
+      function bindToggle(id, key) {
+        $(id).addEventListener("change", event => {
+          state.settings[key] = event.target.checked;
+          saveSettings();
+
+          if (state.settings.enabled) applyStyles();
+          else resetStyles();
+        });
+      }
+
+      bindToggle("enabled", "enabled");
+      bindToggle("styleHud", "styleHud");
+      bindToggle("stylePrompts", "stylePrompts");
+      bindToggle("stylePlayerList", "stylePlayerList");
+
+      $("autoApply").addEventListener("change", event => {
+        state.settings.autoApply = event.target.checked;
+        saveSettings();
+      });
+
+      $("applyBtn").addEventListener("click", applyStyles);
+      $("hideBtn").addEventListener("click", hideApp);
+      $("showBtn").addEventListener("click", showApp);
+
+      loadSettings();
+      setupDrag();
+
+      window.parent.postMessage({
+        type:"registerTrigger",
+        trigger:TOGGLE_TRIGGER,
+        name:"Toggle Hammy MW2 Menu"
+      }, "*");
+
+      window.parent.postMessage({ type:"getData" }, "*");
+
+      setTimeout(() => {
+        state.keybindReady = true;
+      }, 2000);
+
+      setInterval(() => {
+        if (state.settings.enabled) applyFrameStyles();
+      }, 1500);
+
+      setTimeout(() => {
+        if (state.settings.enabled && state.settings.autoApply) applyStyles();
+      }, 500);
+    })();
+  </script>
 </body>
 </html>
