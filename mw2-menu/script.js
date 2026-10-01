@@ -508,7 +508,9 @@
 
       btn.append(label, tag);
       btn.addEventListener("mouseenter", () => select(index, false));
-      btn.addEventListener("click", () => {
+      btn.addEventListener("mousedown", event => event.stopPropagation());
+      btn.addEventListener("click", event => {
+        event.stopPropagation();
         select(index, true);
         activate();
       });
@@ -626,6 +628,10 @@
 
     dragHandle.addEventListener("mousedown", e => {
       if (e.button !== 0) return;
+
+      // Never let dragging swallow clicks on interactive controls.
+      if (e.target.closest("button, a, input, select, textarea, .menu-item")) return;
+
       dragging = true;
       const rect = app.getBoundingClientRect();
       originX = rect.left;
@@ -687,7 +693,11 @@
     }
   });
 
-  primaryAction.addEventListener("click", activate);
+  primaryAction.addEventListener("mousedown", event => event.stopPropagation());
+  primaryAction.addEventListener("click", event => {
+    event.stopPropagation();
+    activate();
+  });
   showButton.addEventListener("click", show);
   if (closeButton) {
     closeButton.addEventListener("mousedown", event => event.stopPropagation());
