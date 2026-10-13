@@ -62,3 +62,15 @@ tr.active-row{background:linear-gradient(90deg,rgba(56,189,248,.095),rgba(56,189
 /* Session reset is distinct from refreshing live data. */
 .reset-icon-btn{color:var(--red);border-color:rgba(251,113,133,.28)}
 .reset-icon-btn:hover{background:rgba(251,113,133,.16);border-color:rgba(251,113,133,.5)}
+
+/* FiveM-safe in-app session reset confirmation. */
+.reset-modal{position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(2,6,14,.80)}
+.reset-dialog{width:min(100%,340px);padding:16px;border:1px solid rgba(251,113,133,.3);border-radius:12px;background:#121c29;box-shadow:0 18px 38px rgba(0,0,0,.55)}
+.reset-dialog-title{font-size:13px;font-weight:800;color:var(--text)}
+.reset-dialog p{margin:9px 0 16px;font-size:11px;line-height:1.5;color:#b8c9db}
+.reset-dialog-actions{display:flex;justify-content:flex-end;gap:8px}
+.reset-cancel-btn,.reset-confirm-btn{padding:7px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer}
+.reset-cancel-btn{border:1px solid var(--line);color:var(--text);background:rgba(255,255,255,.06)}
+.reset-confirm-btn{border:1px solid rgba(251,113,133,.55);color:#fff;background:#a8324c}
+.reset-cancel-btn:hover{background:rgba(255,255,255,.13)}
+.reset-confirm-btn:hover{background:#c33d58}
