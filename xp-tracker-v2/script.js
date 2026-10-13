@@ -525,9 +525,9 @@ function render(){
       if (col.key==="progress") return '<td class="progress-cell"><div class="progress-wrap"><div class="bar"><span style="width:'+lvl.pct.toFixed(1)+'%"></span></div><span class="pct">'+lvl.pct.toFixed(1)+'%</span></div></td>';
       if (col.key==="perk") {
         if (!perk) return '<td class="perk-cell muted">—</td>';
-        if (perk.guaranteed) return '<td class="perk-cell" title="'+perkTitle(job,perk)+'"><span class="perk-chance guaranteed">Guaranteed</span><span class="perk-meta">1M XP reached</span></td>';
+        if (perk.guaranteed) return '<td class="perk-cell" title="'+perkTitle(job,perk)+'"><span class="perk-chance guaranteed">1 in 1</span><span class="perk-meta">100%</span></td>';
         if (!Number.isFinite(perk.chance)) return '<td class="perk-cell" title="'+perkTitle(job,perk)+'"><span class="perk-chance muted">Learning…</span><span class="perk-meta">needs 1 XP gain</span></td>';
-        return '<td class="perk-cell" title="'+perkTitle(job,perk)+'"><span class="perk-chance">'+formatPerkChance(perk.chance)+'</span><span class="perk-meta">'+formatPerkOdds(perk.odds)+' · 50% @ '+formatNumber(perk.milestones.p50)+'</span></td>';
+        return '<td class="perk-cell" title="'+perkTitle(job,perk)+'"><span class="perk-chance">'+formatPerkOdds(perk.odds)+'</span><span class="perk-meta">'+formatPerkChance(perk.chance)+'</span></td>';
       }
       return "<td>—</td>";
     }).join("");
