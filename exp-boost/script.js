@@ -9,6 +9,49 @@ const BOOSTS = {
 
 let foundBoosts = {};
 
+// Identity menu details are observation-only until its live payload is verified.
+const EXP_IDENTITY_PATTERN = /(EXP Bonus|EXP Boost)/i;
+const EXP_EXPIRES_PATTERN = /Expires?\s+(?:in\s+[^)]*|[A-Za-z]+\s+\d+(?:st|nd|rd|th)?)/i;
+const identityObserved = new Map();
+function identityMenuText(value) {
+  const lines = [];
+  const visit = (node, depth=0) => {
+    if (depth > 4 || lines.length > 100) return;
+    if (typeof node === "string") { lines.push(node); return; }
+    if (Array.isArray(node)) { node.forEach(v => visit(v, depth+1)); return; }
+    if (node && typeof node === "object") {
+      for (const [key,v] of Object.entries(node)) {
+        if (/^(text|title|name|label|description|choice|value|html|menu|choices|menu_choices)$/i.test(key)) visit(v, depth+1);
+      }
+    }
+  };
+  visit(value);
+  return lines;
+}
+function inspectIdentityMenu(data) {
+  if (!data || typeof data !== "object") return;
+  const menuName = String(data.menu || data.menu_name || "");
+  const choices = data.menu_choices || data.choices || data.menu_choice;
+  const lines = identityMenuText(choices);
+  const combined = [menuName, ...lines].join(" ");
+  if (!/identity/i.test(combined) && !lines.some(line => EXP_IDENTITY_PATTERN.test(line))) return;
+  for (const line of lines) {
+    const clean = String(line).replace(/<[^>]*>/g, " ").replace(/\\s+/g," ").trim();
+    if (EXP_IDENTITY_PATTERN.test(clean) && EXP_EXPIRES_PATTERN.test(clean)) identityObserved.set(clean, Date.now());
+  }
+  const message = document.getElementById("identity-message");
+  const listing = document.getElementById("identity-boosts");
+  if (!identityObserved.size) return;
+  message.textContent = identityObserved.size + " active EXP bonus" + (identityObserved.size === 1 ? "" : "es") + " observed";
+  listing.replaceChildren();
+  for (const label of identityObserved.keys()) {
+    const row = document.createElement("div");
+    row.textContent = label;
+    listing.appendChild(row);
+  }
+}
+
+
 
 function parseInventory(data) {
   foundBoosts = {};
@@ -65,6 +108,11 @@ function buildPopup() {
 function sendCommand(cmd) {
   window.parent.postMessage({ type: "sendCommand", command: cmd }, "*");
 }
+
+document.getElementById("faction-menu-btn").addEventListener("click", () => {
+  sendCommand("faction");
+  document.getElementById("popup").classList.add("hidden");
+});
 
 document.getElementById("open-ui").addEventListener("click", () => {
   buildPopup();
@@ -128,6 +176,7 @@ window.parent.postMessage({
 window.addEventListener("message", (event) => {
   const raw = event.data;
   const data = raw?.data || raw;
+  inspectIdentityMenu(data);
 
   if (data?.inventory) {
     let parsedInventory = {};
