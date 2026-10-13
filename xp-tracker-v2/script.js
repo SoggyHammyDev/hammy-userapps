@@ -554,13 +554,22 @@ function setupUi(){
   $("jobs-btn").addEventListener("click",e=>{e.stopPropagation();$("job-picker").classList.toggle("hidden");$("settings-panel").classList.add("hidden")});
   $("settings-btn").addEventListener("click",e=>{e.stopPropagation();$("settings-panel").classList.toggle("hidden");$("job-picker").classList.add("hidden")});
   $("refresh-btn").addEventListener("click",requestData);
-  const confirmReset = () => {
-    if (window.confirm("Reset tracked XP gains, session time, and XP/hour history? Your actual in-game XP and levels will not change.")) {
-      resetSession();
-      $("settings-panel").classList.add("hidden");
-    }
+  const showResetDialog = () => {
+    $("settings-panel").classList.add("hidden");
+    $("job-picker").classList.add("hidden");
+    $("reset-modal").classList.remove("hidden");
+    $("reset-cancel").focus();
   };
-  $("reset-btn").addEventListener("click", confirmReset);
+  const hideResetDialog = () => $("reset-modal").classList.add("hidden");
+  $("reset-btn").addEventListener("click",showResetDialog);
+  $("reset-cancel").addEventListener("click",hideResetDialog);
+  $("reset-confirm").addEventListener("click",() => {
+    resetSession();
+    hideResetDialog();
+  });
+  $("reset-modal").addEventListener("click",event => {
+    if (event.target === $("reset-modal")) hideResetDialog();
+  });
   $("minimize-btn").addEventListener("click",()=>{
     state.minimized=!state.minimized;
     $("body").classList.toggle("minimized",state.minimized);
@@ -578,11 +587,18 @@ function setupUi(){
     if (id === "auto-select-job" && $("auto-select-job").checked) autoSelectForCurrentJob(true);
   }));
   $("font-size").addEventListener("input",saveSettings);
-  $("reset-session").addEventListener("click",confirmReset);
+  $("reset-session").addEventListener("click",showResetDialog);
   document.addEventListener("click",e=>{
     if (!e.target.closest("#settings-panel")&&!e.target.closest("#settings-btn")) $("settings-panel").classList.add("hidden");
   });
-  window.addEventListener("keydown",e=>{if(e.key==="Escape")window.parent.postMessage({type:"pin"},"*")});
+  window.addEventListener("keydown",e=>{
+    if (e.key === "Escape" && !$("reset-modal").classList.contains("hidden")) {
+      hideResetDialog();
+      e.stopPropagation();
+      return;
+    }
+    if (e.key === "Escape") window.parent.postMessage({type:"pin"},"*");
+  });
 }
 
 function setupDragResize(){
