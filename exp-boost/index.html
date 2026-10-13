@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex">
   <title>Hammy EXP Boosts</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="style.css?v=2.1-identity">
+  <link rel="stylesheet" href="style.css?v=2.2-menu-observe">
 </head>
 <body>
   <section id="exp-redeemer">
@@ -16,7 +16,7 @@
         <div class="header-copy">
           <div class="title-row">
             <span>EXP Boosts</span>
-            <span class="version-badge">v2.1</span>
+            <span class="version-badge">v2.2</span>
           </div>
           <span class="subtitle"><span id="boost-count">0</span> boost types detected</span>
         </div>
@@ -37,7 +37,8 @@
         <div>
           <span class="summary-label">Active EXP boosts</span>
           <strong id="identity-message">Waiting for EXP boost data</strong>
-          <span class="identity-help">Open Main Menu → Identity in Transport Tycoon to scan active bonuses.</span>
+          <span class="identity-help">Open your Main Menu once. The Identity entry contains EXP boost data. Check individual boosts to enable renewal.</span>
+          <label class="auto-renew-toggle"><input id="auto-renew-enabled" type="checkbox"> Enable automatic renewal (this session)</label>
           <div id="identity-boosts" class="identity-boosts"></div>
         </div>
       </div>
@@ -66,6 +67,6 @@
 
   <button id="exp-toggle-btn" class="hidden toggle-btn" title="Open EXP Boost UI" aria-label="Open EXP Boost UI">⚡</button>
 
-  <script src="script.js?v=2.1-identity"></script>
+  <script src="script.js?v=2.2-menu-observe"></script>
 </body>
 </html>
