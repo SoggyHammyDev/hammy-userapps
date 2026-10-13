@@ -30,8 +30,7 @@ let identityLastSeen = 0;
 let identitySnapshotValid = false;
 let autoRenewEnabled = false;
 let lastIdentityText = "";
-const REQUEST_INTERVAL = 15000;
-const SNAPSHOT_AGE_LIMIT = 45000;
+const DISPLAY_INTERVAL = 1000;
 const RETRY_WINDOW = 120000;
 
 function cleanText(text) {
@@ -80,10 +79,11 @@ function parseIdentitySnapshot(description) {
     // Repeated unchanged menu snapshots must not continually extend timers.
     if (prior && !changed && prior.expiresText === entry.expiresText) entry.expiry = prior.expiry;
     activeBoosts.set(id,entry);
-    if (entry.expiry !== null) expectedExpiry.set(id,entry.expiry);
+    if (entry.expiry !== null && (!prior || prior.expiresText !== entry.expiresText || !expectedExpiry.has(id))) expectedExpiry.set(id,entry.expiry);
     expiryMisses.delete(id);
     absenceStarted.delete(id);
-    recentlyRedeemed.delete(id);
+    // Do not clear the redemption lock on repeated stale snapshots.
+    if (prior && prior.expiresText !== entry.expiresText && entry.expiry > (recentlyRedeemed.get(id)||0)) recentlyRedeemed.delete(id);
   }
   for (const id of Array.from(activeBoosts.keys())) {
     if (!next.has(id)) activeBoosts.delete(id);
@@ -112,10 +112,7 @@ function renderIdentityBoosts() {
     message.textContent = "Waiting for EXP boost data";
     return;
   }
-  const fresh = Date.now()-identityLastSeen <= SNAPSHOT_AGE_LIMIT;
-  message.textContent = fresh
-    ? activeBoosts.size + " active EXP boost" + (activeBoosts.size === 1 ? "" : "s") + " detected"
-    : "Waiting for fresh Identity data";
+  message.textContent = activeBoosts.size + " active EXP boost" + (activeBoosts.size === 1 ? "" : "s") + " observed · Watching expiry timers";
   listing.replaceChildren();
   for (const type of BOOST_TYPES) {
     const entry = activeBoosts.get(type.id);
@@ -126,7 +123,7 @@ function renderIdentityBoosts() {
     if (entry) {
       if (entry.expiry !== null) {
         const mins = Math.max(0,Math.ceil((entry.expiry-Date.now())/60000));
-        remaining = mins > 0 ? Math.floor(mins/60)+"h "+(mins%60)+"m remaining" : "Expiration pending verification";
+        remaining = mins > 0 ? Math.floor(mins/60)+"h "+(mins%60)+"m remaining" : "Estimated expired";
       } else remaining = entry.expiresText;
     }
     label.textContent = type.name + " · " + remaining;
@@ -147,32 +144,27 @@ function renderIdentityBoosts() {
   }
 }
 function maybeAutoRenew() {
-  if (!autoRenewEnabled || !identitySnapshotValid || Date.now()-identityLastSeen>SNAPSHOT_AGE_LIMIT) return;
+  if (!autoRenewEnabled || !identitySnapshotValid) return;
   for (const id of watched) {
-    const entry = activeBoosts.get(id);
-    // Never spend while active. Require a previously seen timed expiry,
-    // and two changed menu observations confirming it's absent.
     const expiry = expectedExpiry.get(id);
-    if (entry || !Number.isFinite(expiry) || Date.now()<expiry ||
-        (expiryMisses.get(id)||0)<2 || Date.now()-(absenceStarted.get(id)||Date.now())<15000 ||
-        (id !== "faction" && (foundBoosts[id]||0)<1)) continue;
-    const prior = recentlyRedeemed.get(id);
-    if (prior && Date.now()-prior < RETRY_WINDOW) continue;
+    if (!Number.isFinite(expiry) || Date.now() < expiry + 65000) continue;
+    // Identity supplies minute-rounded times. Wait an extra minute rather
+    // than redeem too early. One command per observed boost expiry.
+    if (recentlyRedeemed.has(id)) continue;
+    if (id !== "faction" && (foundBoosts[id] || 0) < 1) continue;
     recentlyRedeemed.set(id,Date.now());
-    expiryMisses.set(id,0);
     expectedExpiry.delete(id);
-    absenceStarted.delete(id);
     if (id === "faction") {
       sendCommand("faction");
-      // Return from faction menu after it has had time to open.
       setTimeout(() => window.parent.postMessage({type:"forceMenuBack"},"*"),1200);
-      document.getElementById("identity-message").textContent = "Faction renewal requested; awaiting verification";
+      document.getElementById("identity-message").textContent = "Faction renewal requested; check Identity to verify";
     } else {
-      sendCommand("item "+id+" redeem");
-      document.getElementById("identity-message").textContent = "Redeemed "+(BOOST_TYPES.find(t=>t.id===id)?.name||id)+"; awaiting verification";
+      sendCommand("item " + id + " redeem");
+      document.getElementById("identity-message").textContent = "Renewal requested for " + id + "; check Identity to verify";
     }
   }
 }
+
 function parseInventory(data) {
   foundBoosts = {};
   for (const [id, item] of Object.entries(data)) {
@@ -363,9 +355,9 @@ window.addEventListener("keydown", (e) => {
 });
 
 setInterval(()=>{
-  window.parent.postMessage({type:"getData"},"*");
   renderIdentityBoosts();
-},REQUEST_INTERVAL);
+  maybeAutoRenew();
+},DISPLAY_INTERVAL);
 document.getElementById("auto-renew-enabled").addEventListener("change",event=>{
   autoRenewEnabled=event.target.checked;
   maybeAutoRenew();
