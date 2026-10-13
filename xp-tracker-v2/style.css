@@ -64,7 +64,7 @@ tr.active-row{background:linear-gradient(90deg,rgba(56,189,248,.095),rgba(56,189
 .reset-icon-btn:hover{background:rgba(251,113,133,.16);border-color:rgba(251,113,133,.5)}
 
 /* FiveM-safe in-app session reset confirmation. */
-.reset-modal{position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(2,6,14,.80)}
+.reset-modal{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(2,6,14,.55);pointer-events:auto}
 .reset-dialog{width:min(100%,340px);padding:16px;border:1px solid rgba(251,113,133,.3);border-radius:12px;background:#121c29;box-shadow:0 18px 38px rgba(0,0,0,.55)}
 .reset-dialog-title{font-size:13px;font-weight:800;color:var(--text)}
 .reset-dialog p{margin:9px 0 16px;font-size:11px;line-height:1.5;color:#b8c9db}
