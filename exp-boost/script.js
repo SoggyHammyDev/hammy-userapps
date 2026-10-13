@@ -131,7 +131,7 @@ function renderIdentityBoosts() {
     }
     label.textContent = type.name + " · " + remaining;
     row.appendChild(label);
-    if (type.id !== "faction") {
+    {
       const toggle = document.createElement("input");
       toggle.type = "checkbox";
       toggle.checked = watched.has(type.id);
@@ -155,15 +155,22 @@ function maybeAutoRenew() {
     const expiry = expectedExpiry.get(id);
     if (entry || !Number.isFinite(expiry) || Date.now()<expiry ||
         (expiryMisses.get(id)||0)<2 || Date.now()-(absenceStarted.get(id)||Date.now())<15000 ||
-        (foundBoosts[id]||0)<1) continue;
+        (id !== "faction" && (foundBoosts[id]||0)<1)) continue;
     const prior = recentlyRedeemed.get(id);
     if (prior && Date.now()-prior < RETRY_WINDOW) continue;
     recentlyRedeemed.set(id,Date.now());
     expiryMisses.set(id,0);
     expectedExpiry.delete(id);
     absenceStarted.delete(id);
-    sendCommand("item "+id+" redeem");
-    document.getElementById("identity-message").textContent = "Redeemed "+(BOOST_TYPES.find(t=>t.id===id)?.name||id)+"; awaiting verification";
+    if (id === "faction") {
+      sendCommand("faction");
+      // Return from faction menu after it has had time to open.
+      setTimeout(() => window.parent.postMessage({type:"forceMenuBack"},"*"),1200);
+      document.getElementById("identity-message").textContent = "Faction renewal requested; awaiting verification";
+    } else {
+      sendCommand("item "+id+" redeem");
+      document.getElementById("identity-message").textContent = "Redeemed "+(BOOST_TYPES.find(t=>t.id===id)?.name||id)+"; awaiting verification";
+    }
   }
 }
 function parseInventory(data) {
