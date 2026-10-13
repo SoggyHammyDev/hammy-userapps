@@ -23,6 +23,8 @@ const BOOST_TYPES = [
 const activeBoosts = new Map();
 const expiryMisses = new Map();
 const recentlyRedeemed = new Map();
+const expectedExpiry = new Map();
+const absenceStarted = new Map();
 const watched = new Set();
 let identityLastSeen = 0;
 let identitySnapshotValid = false;
@@ -78,16 +80,20 @@ function parseIdentitySnapshot(description) {
     // Repeated unchanged menu snapshots must not continually extend timers.
     if (prior && !changed && prior.expiresText === entry.expiresText) entry.expiry = prior.expiry;
     activeBoosts.set(id,entry);
+    if (entry.expiry !== null) expectedExpiry.set(id,entry.expiry);
     expiryMisses.delete(id);
+    absenceStarted.delete(id);
     recentlyRedeemed.delete(id);
   }
   for (const id of Array.from(activeBoosts.keys())) {
     if (!next.has(id)) activeBoosts.delete(id);
   }
-  // Two distinct, fresh absence observations are required after an expected
-  // expiry. They can only be counted once per changed Identity snapshot.
-  if (changed) for (const id of watched) {
-    if (!next.has(id)) expiryMisses.set(id,(expiryMisses.get(id)||0)+1);
+  // Require sustained absence after a previously observed expected expiry.
+  // Never redeem merely because the boost was missing on initial load.
+  for (const id of watched) {
+    if (next.has(id)) continue;
+    if (!absenceStarted.has(id)) absenceStarted.set(id,now);
+    expiryMisses.set(id,(expiryMisses.get(id)||0)+1);
   }
   renderIdentityBoosts();
   maybeAutoRenew();
@@ -146,11 +152,16 @@ function maybeAutoRenew() {
     const entry = activeBoosts.get(id);
     // Never spend while active. Require a previously seen timed expiry,
     // and two changed menu observations confirming it's absent.
-    if (entry || (expiryMisses.get(id)||0)<2 || (foundBoosts[id]||0)<1) continue;
+    const expiry = expectedExpiry.get(id);
+    if (entry || !Number.isFinite(expiry) || Date.now()<expiry ||
+        (expiryMisses.get(id)||0)<2 || Date.now()-(absenceStarted.get(id)||Date.now())<15000 ||
+        (foundBoosts[id]||0)<1) continue;
     const prior = recentlyRedeemed.get(id);
     if (prior && Date.now()-prior < RETRY_WINDOW) continue;
     recentlyRedeemed.set(id,Date.now());
     expiryMisses.set(id,0);
+    expectedExpiry.delete(id);
+    absenceStarted.delete(id);
     sendCommand("item "+id+" redeem");
     document.getElementById("identity-message").textContent = "Redeemed "+(BOOST_TYPES.find(t=>t.id===id)?.name||id)+"; awaiting verification";
   }
