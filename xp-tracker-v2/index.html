@@ -74,6 +74,18 @@
       <button id="reset-session" class="danger-btn">Reset session baseline</button>
     </aside>
 
+
+    <div id="reset-modal" class="reset-modal hidden" role="dialog" aria-modal="true" aria-labelledby="reset-modal-title" aria-describedby="reset-modal-description">
+      <div class="reset-dialog">
+        <div class="reset-dialog-title" id="reset-modal-title">Reset tracking session?</div>
+        <p id="reset-modal-description">This clears tracked XP gains, session time, and XP/hour history. Your in-game XP and levels stay unchanged.</p>
+        <div class="reset-dialog-actions">
+          <button id="reset-cancel" class="reset-cancel-btn" type="button">Cancel</button>
+          <button id="reset-confirm" class="reset-confirm-btn" type="button">Reset session</button>
+        </div>
+      </div>
+    </div>
+
     <div id="resize-handle" title="Resize"></div>
   </section>
 
