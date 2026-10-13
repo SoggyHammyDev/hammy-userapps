@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex">
   <title>Hammy EXP Boosts</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2.1-identity">
 </head>
 <body>
   <section id="exp-redeemer">
@@ -16,7 +16,7 @@
         <div class="header-copy">
           <div class="title-row">
             <span>EXP Boosts</span>
-            <span class="version-badge">v2</span>
+            <span class="version-badge">v2.1</span>
           </div>
           <span class="subtitle"><span id="boost-count">0</span> boost types detected</span>
         </div>
@@ -32,6 +32,17 @@
         </div>
         <span id="total-boosts" class="count-pill">0</span>
       </div>
+
+      <div id="identity-status" class="summary-card identity-card">
+        <div>
+          <span class="summary-label">Active EXP boosts</span>
+          <strong id="identity-message">Waiting for EXP boost data</strong>
+          <span class="identity-help">Open Main Menu → Identity in Transport Tycoon to scan active bonuses.</span>
+          <div id="identity-boosts" class="identity-boosts"></div>
+        </div>
+      </div>
+
+      <button id="faction-menu-btn" class="btn btn-secondary" type="button">Open Faction Menu</button>
 
       <button id="open-ui" class="btn btn-primary" style="display:none;">Choose Boosts</button>
 
@@ -55,6 +66,6 @@
 
   <button id="exp-toggle-btn" class="hidden toggle-btn" title="Open EXP Boost UI" aria-label="Open EXP Boost UI">⚡</button>
 
-  <script src="script.js?v=20260920"></script>
+  <script src="script.js?v=2.1-identity"></script>
 </body>
 </html>
