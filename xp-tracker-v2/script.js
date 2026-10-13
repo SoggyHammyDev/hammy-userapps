@@ -554,6 +554,13 @@ function setupUi(){
   $("jobs-btn").addEventListener("click",e=>{e.stopPropagation();$("job-picker").classList.toggle("hidden");$("settings-panel").classList.add("hidden")});
   $("settings-btn").addEventListener("click",e=>{e.stopPropagation();$("settings-panel").classList.toggle("hidden");$("job-picker").classList.add("hidden")});
   $("refresh-btn").addEventListener("click",requestData);
+  const confirmReset = () => {
+    if (window.confirm("Reset tracked XP gains, session time, and XP/hour history? Your actual in-game XP and levels will not change.")) {
+      resetSession();
+      $("settings-panel").classList.add("hidden");
+    }
+  };
+  $("reset-btn").addEventListener("click", confirmReset);
   $("minimize-btn").addEventListener("click",()=>{
     state.minimized=!state.minimized;
     $("body").classList.toggle("minimized",state.minimized);
@@ -571,7 +578,7 @@ function setupUi(){
     if (id === "auto-select-job" && $("auto-select-job").checked) autoSelectForCurrentJob(true);
   }));
   $("font-size").addEventListener("input",saveSettings);
-  $("reset-session").addEventListener("click",resetSession);
+  $("reset-session").addEventListener("click",confirmReset);
   document.addEventListener("click",e=>{
     if (!e.target.closest("#settings-panel")&&!e.target.closest("#settings-btn")) $("settings-panel").classList.add("hidden");
   });
