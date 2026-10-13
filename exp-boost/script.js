@@ -154,9 +154,10 @@ function maybeAutoRenew() {
   if (now - lastAutomaticCommand < 30000) return;
   for (const type of BOOST_TYPES) {
     const id = type.id;
-    if (!watched.has(id) || activeBoosts.has(id) || recentlyRedeemed.has(id)) continue;
+    if (!watched.has(id) || recentlyRedeemed.has(id)) continue;
     const expiry = expectedExpiry.get(id);
     const timedOut = Number.isFinite(expiry) && now >= expiry + 65000;
+    if (activeBoosts.has(id) && !timedOut) continue;
     // Already inactive on first observation: wait 10 seconds to guard
     // against a transient empty menu, then allow a single initial activation.
     const initiallyInactive = !Number.isFinite(expiry) &&
