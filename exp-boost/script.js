@@ -30,6 +30,8 @@ let identityLastSeen = 0;
 let identitySnapshotValid = false;
 let autoRenewEnabled = false;
 let lastIdentityText = "";
+const inactiveSince = new Map();
+let lastAutomaticCommand = 0;
 const DISPLAY_INTERVAL = 1000;
 const RETRY_WINDOW = 120000;
 
@@ -82,6 +84,7 @@ function parseIdentitySnapshot(description) {
     if (entry.expiry !== null && (!prior || prior.expiresText !== entry.expiresText || !expectedExpiry.has(id))) expectedExpiry.set(id,entry.expiry);
     expiryMisses.delete(id);
     absenceStarted.delete(id);
+    inactiveSince.delete(id);
     // Do not clear the redemption lock on repeated stale snapshots.
     if (prior && prior.expiresText !== entry.expiresText && entry.expiry > (recentlyRedeemed.get(id)||0)) recentlyRedeemed.delete(id);
   }
@@ -92,6 +95,7 @@ function parseIdentitySnapshot(description) {
   // Never redeem merely because the boost was missing on initial load.
   for (const id of watched) {
     if (next.has(id)) continue;
+    if (!inactiveSince.has(id)) inactiveSince.set(id,now);
     if (!absenceStarted.has(id)) absenceStarted.set(id,now);
     expiryMisses.set(id,(expiryMisses.get(id)||0)+1);
   }
@@ -135,8 +139,8 @@ function renderIdentityBoosts() {
       toggle.title = "Auto-renew " + type.name;
       toggle.setAttribute("aria-label","Auto-renew " + type.name);
       toggle.addEventListener("change",()=>{
-        if (toggle.checked) watched.add(type.id);
-        else { watched.delete(type.id); expiryMisses.delete(type.id); }
+        if (toggle.checked) { watched.add(type.id); if (!activeBoosts.has(type.id)) inactiveSince.set(type.id,Date.now()); }
+        else { watched.delete(type.id); expiryMisses.delete(type.id); inactiveSince.delete(type.id); }
       });
       row.appendChild(toggle);
     }
@@ -145,23 +149,33 @@ function renderIdentityBoosts() {
 }
 function maybeAutoRenew() {
   if (!autoRenewEnabled || !identitySnapshotValid) return;
-  for (const id of watched) {
+  const now = Date.now();
+  // Never fire multiple boost commands in the same sweep.
+  if (now - lastAutomaticCommand < 30000) return;
+  for (const type of BOOST_TYPES) {
+    const id = type.id;
+    if (!watched.has(id) || activeBoosts.has(id) || recentlyRedeemed.has(id)) continue;
     const expiry = expectedExpiry.get(id);
-    if (!Number.isFinite(expiry) || Date.now() < expiry + 65000) continue;
-    // Identity supplies minute-rounded times. Wait an extra minute rather
-    // than redeem too early. One command per observed boost expiry.
-    if (recentlyRedeemed.has(id)) continue;
+    const timedOut = Number.isFinite(expiry) && now >= expiry + 65000;
+    // Already inactive on first observation: wait 10 seconds to guard
+    // against a transient empty menu, then allow a single initial activation.
+    const initiallyInactive = !Number.isFinite(expiry) &&
+      inactiveSince.has(id) && now - inactiveSince.get(id) >= 10000;
+    if (!timedOut && !initiallyInactive) continue;
     if (id !== "faction" && (foundBoosts[id] || 0) < 1) continue;
-    recentlyRedeemed.set(id,Date.now());
+    recentlyRedeemed.set(id,now);
+    lastAutomaticCommand = now;
     expectedExpiry.delete(id);
+    inactiveSince.delete(id);
     if (id === "faction") {
       sendCommand("faction");
       setTimeout(() => window.parent.postMessage({type:"forceMenuBack"},"*"),1200);
-      document.getElementById("identity-message").textContent = "Faction renewal requested; check Identity to verify";
     } else {
       sendCommand("item " + id + " redeem");
-      document.getElementById("identity-message").textContent = "Renewal requested for " + id + "; check Identity to verify";
     }
+    document.getElementById("identity-message").textContent =
+      "Activation requested: " + type.name + " · awaiting updated Identity data";
+    break;
   }
 }
 
@@ -360,5 +374,6 @@ setInterval(()=>{
 },DISPLAY_INTERVAL);
 document.getElementById("auto-renew-enabled").addEventListener("change",event=>{
   autoRenewEnabled=event.target.checked;
+  if (autoRenewEnabled) for (const id of watched) if (!activeBoosts.has(id) && !inactiveSince.has(id)) inactiveSince.set(id,Date.now());
   maybeAutoRenew();
 });
