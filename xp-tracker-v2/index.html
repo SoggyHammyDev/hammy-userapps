@@ -4,8 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
   <meta name="robots" content="noindex">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Hammy XP Tracker v2</title>
-  <link rel="stylesheet" href="style.css?v=2.4.3">
+  <script>
+    // Each load requests fresh assets in FiveM's embedded Chromium browser.
+    const trackerCacheKey = "2.4.4-" + Date.now();
+    const trackerStyles = document.createElement("link");
+    trackerStyles.rel = "stylesheet";
+    trackerStyles.href = "style.css?v=" + trackerCacheKey;
+    document.head.appendChild(trackerStyles);
+  </script>
 </head>
 <body>
   <section id="tracker-app" class="tracker" style="left:40px;top:40px;">
@@ -13,7 +23,7 @@
       <div class="header-left">
         <span class="logo">⚡</span>
         <div>
-          <div class="title">XP Tracker <span class="version">v2.4.3</span></div>
+          <div class="title">XP Tracker <span class="version">v2.4.4</span></div>
           <div id="connection-status" class="status">Waiting for Transport Tycoon…</div>
         </div>
       </div>
@@ -89,6 +99,10 @@
       </div>
     </div>
 
-  <script src="script.js?v=2.4.3"></script>
+  <script>
+    const trackerScript = document.createElement("script");
+    trackerScript.src = "script.js?v=" + trackerCacheKey;
+    document.body.appendChild(trackerScript);
+  </script>
 </body>
 </html>
