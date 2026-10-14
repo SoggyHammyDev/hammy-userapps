@@ -79,6 +79,18 @@ const JOB_SKILL_MAP = {
   "bus driver":["busdriver"],
   "bus":["busdriver"],
   "train conductor":["conductor"],
+  "conductor":["conductor"],
+  "train":["conductor"],
+  "busdriver":["busdriver"],
+  "garbagecollector":["garbage"],
+  "airlinepilot":["pilot"],
+  "cargopilot":["cargopilot","player","strength"],
+  "helicopterpilot":["helicopterpilot"],
+  "streetracer":["racer"],
+  "fisherman":["fisher"],
+  "fishing":["fisher"],
+  "mining":["miner","strength"],
+  "hunting":["hunter"],
   "ems / paramedic":["emergency"],
   "ems":["emergency"],
   "paramedic":["emergency"],
@@ -97,16 +109,25 @@ const JOB_SKILL_MAP = {
 
   // Specialized / side jobs confirmed by saved Tycoon wiki pages.
   "aerial firefighter":["firefighter","pilot"],
+  "aerialfirefighter":["firefighter","pilot"],
   "beach cleaner":["garbage"],
+  "beachcleaner":["garbage"],
   "collinsco cabbies":["business"],
+  "collinsco cabbie":["business"],
   "courier":["trucker","player","strength"],
+  "ups courier":["trucker","player","strength"],
   "iaa delivery":["player","strength"],
+  "iaadelivery":["player","strength"],
   "land surveyor":["strength"],
   "pizza delivery":["player","strength"],
   "prospecting":["miner","strength"],
   "quarry worker":["miner","trucker"],
+  "quarry":["miner","trucker"],
+  "quarryworker":["miner","trucker"],
   "server repair":["mechanic","player","strength"],
+  "serverrepair":["mechanic","player","strength"],
   "transformer repair":["mechanic","player","strength"],
+  "transformerrepair":["mechanic","player","strength"],
 
   // RTS mappings confirmed by the saved RTS wiki page.
   "r.t.s. transporter":["racer","business"],
@@ -114,6 +135,10 @@ const JOB_SKILL_MAP = {
   "r.t.s. aviator":["business","pilot","racer"],
   "rts aviator":["business","pilot","racer"],
   "r.t.s. professional":["business","pilot","racer"],
+  "rts professional":["business","pilot","racer"],
+  "rts":["racer","business"],
+  "rts transporter":["racer","business"],
+  "rts aviator":["business","pilot","racer"],
   "rts professional":["business","pilot","racer"]
 }
 
@@ -128,6 +153,8 @@ const state = {
   job:"",
   jobName:"",
   jobTitle:"",
+  subjob:"",
+  subjobName:"",
   sessionStartedAt:Date.now(),
   received:false,
   minimized:false,
@@ -337,7 +364,7 @@ function normalizeJobName(value){
 }
 
 function currentJobNames(){
-  return [state.jobName,state.jobTitle,state.job]
+  return [state.subjobName,state.subjob,state.jobName,state.jobTitle,state.job]
     .map(normalizeJobName)
     .filter(Boolean);
 }
@@ -381,6 +408,8 @@ function activeSkillKey(){
   }
   if (freshest) return freshest;
   const current = String(state.job||"").toLowerCase();
+  const mapped = mappedSkillsForCurrentJob();
+  if (mapped.length) return mapped[0];
   const byJob = JOBS.find(j => j.jobs.includes(current));
   return byJob?.key || null;
 }
@@ -405,6 +434,8 @@ function processGameData(data){
   if (typeof data.job === "string") state.job = data.job;
   if (typeof data.job_name === "string") state.jobName = data.job_name;
   if (typeof data.job_title === "string") state.jobTitle = data.job_title;
+  if (typeof data.subjob === "string") state.subjob = data.subjob;
+  if (typeof data.subjob_name === "string") state.subjobName = data.subjob_name;
   const newJobSignature = currentJobNames().join("|");
   const jobChanged = oldJobSignature !== newJobSignature;
 
